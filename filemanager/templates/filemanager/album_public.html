@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>{{ album.album_name }}</title>
+
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        body {
+            background: #f4f6f9;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen">
+
+    <div class="max-w-7xl mx-auto p-6 space-y-6">
+
+        <!-- HEADER -->
+        <div class="flex items-center justify-between flex-wrap gap-4">
+            <h2 class="text-xl font-bold text-gray-800">
+                📸 {{ album.album_name }}
+                <span class="ml-2 text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
+                    Full Album
+                </span>
+            </h2>
+
+            <div class="flex items-center gap-4">
+                {% if allow_download %}
+                <!-- FULL ALBUM DOWNLOAD -->
+                <a href="{% url 'shared_album_download' share_token %}" class="bg-blue-600 text-white text-sm px-4 py-2 rounded
+                      hover:bg-blue-700 transition font-semibold">
+                    ⬇ Download Full Album
+                </a>
+                {% else %}
+                <span class="text-sm text-red-600 font-semibold">
+                    🚫 Download Disabled
+                </span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- FILE GRID -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+
+            {% for f in files %}
+            <div class="bg-white border rounded p-2 hover:shadow transition">
+
+                <!-- THUMBNAIL -->
+                <div onclick="openLightbox({{ forloop.counter0 }})" class="cursor-pointer text-center">
+
+                    {% if f.file_type == "image" and f.thumbnail %}
+                    <img src="{{ f.thumbnail.url }}" class="w-full h-40 object-cover rounded">
+
+                    {% elif f.file_type == "video" %}
+                    <div class="text-5xl py-10">🎬</div>
+
+                    {% else %}
+                    <div class="text-5xl py-10">📄</div>
+                    {% endif %}
+                </div>
+
+                <!-- FILE INFO -->
+                <div class="mt-2 text-xs text-gray-600">
+                    <p class="font-semibold truncate">
+                        {{ f.original_name }}
+                    </p>
+                    <p>{{ f.file_type|upper }}</p>
+                </div>
+
+                <!-- DOWNLOAD -->
+                <div class="mt-2">
+                    {% if allow_download %}
+                    <a href="{% url 'public_album_file_download' share_token f.id %}"
+                        class="text-blue-600 text-xs font-semibold">
+                        ⬇ Download
+                    </a>
+                    {% else %}
+                    <span class="text-gray-400 text-xs">
+                        🚫 Download disabled
+                    </span>
+                    {% endif %}
+
+                </div>
+
+                <!-- LIGHTBOX DATA -->
+                <input type="hidden" class="file-url" value="{{ f.file.url }}">
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- LIGHTBOX -->
+    <div id="lightbox" class="fixed inset-0 bg-black/90 z-50 hidden
+            flex items-center justify-center">
+
+        <button onclick="closeLightbox()" class="absolute top-6 right-6 bg-white
+                   rounded-full w-12 h-12
+                   flex items-center justify-center text-xl">
+            ✕
+        </button>
+
+        <button onclick="prevFile(event)" class="absolute left-6 text-white text-5xl select-none">
+            ‹
+        </button>
+
+        <button onclick="nextFile(event)" class="absolute right-6 text-white text-5xl select-none">
+            ›
+        </button>
+
+        <div class="relative max-w-[90%] max-h-[90%]">
+            <img id="preview-img" class="hidden max-h-[90vh] rounded shadow-lg">
+        </div>
+    </div>
+
+    <script>
+        let files = [];
+        let currentIndex = 0;
+
+        document.querySelectorAll(".file-url").forEach((el) => {
+            files.push(el.value);
+        });
+
+        function openLightbox(index) {
+            currentIndex = index;
+            showImage();
+            document.getElementById("lightbox")
+                .classList.remove("hidden");
+            document.body.style.overflow = "hidden";
+        }
+
+        function closeLightbox() {
+            document.getElementById("lightbox")
+                .classList.add("hidden");
+            document.body.style.overflow = "";
+        }
+
+        function nextFile(e) {
+            if (e) e.stopPropagation();
+            currentIndex = (currentIndex + 1) % files.length;
+            showImage();
+        }
+
+        function prevFile(e) {
+            if (e) e.stopPropagation();
+            currentIndex =
+                (currentIndex - 1 + files.length) % files.length;
+            showImage();
+        }
+
+        function showImage() {
+            const img = document.getElementById("preview-img");
+            img.src = files[currentIndex];
+            img.classList.remove("hidden");
+        }
+
+        document.addEventListener("keydown", function (e) {
+            const lb = document.getElementById("lightbox");
+            if (lb.classList.contains("hidden")) return;
+            if (e.key === "Escape") closeLightbox();
+            if (e.key === "ArrowRight") nextFile();
+            if (e.key === "ArrowLeft") prevFile();
+        });
+    </script>
+
+</body>
+
+</html>

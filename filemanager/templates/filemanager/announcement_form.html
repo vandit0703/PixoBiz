@@ -1,0 +1,152 @@
+{% extends 'filemanager/base.html' %}
+
+{% block title %}Create Announcement – ShreeSpace{% endblock %}
+
+{% block content %}
+<div class="home-section"
+    style="position: relative; left: 0; width: 100%; min-height: 100vh; background-color: #f4f6f9; display: flex; flex-direction: column; transition: all 0.4s ease;">
+
+    <div style="display: flex; justify-content: center; align-items: flex-start; padding: 40px 20px; width: 100%;">
+
+        <div
+            style="width: 100%; max-width: 800px; background: #ffffff; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); border: 1px solid #e0e0e0; overflow: hidden;">
+
+            <div style="padding: 25px 35px; border-bottom: 1px solid #f0f0f0;">
+                <h2 style="font-size: 1.35rem; font-weight: 700; color: #2c3e50; margin: 0;">Create Job Announcement
+                </h2>
+                <p style="font-size: 0.85rem; color: #6c757d; margin: 5px 0 0 0;">Fill in the details below to post a
+                    new requirement.</p>
+            </div>
+
+            <div style="padding: 35px;">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="form-grid-layout">
+                        <div class="full-width">
+                            <label>Occasion</label>
+                            {{ form.occasion }}
+                        </div>
+
+                        <div class="full-width">
+                            <label>Requirement Details</label>
+                            {{ form.requirement }}
+                        </div>
+
+                        <div class="half-width">
+                            <label>Start Date</label>
+                            {{ form.start_date }}
+                        </div>
+                        <div class="half-width">
+                            <label>End Date</label>
+                            {{ form.end_date }}
+                        </div>
+
+                        <div class="half-width">
+                            <label>Time</label>
+                            {{ form.time }}
+                        </div>
+                        <div class="half-width">
+                            <label>Side</label>
+                            {{ form.side }}
+                        </div>
+
+                        <div class="half-width">
+                            <label>State</label>
+                            {{ form.state }}
+                        </div>
+                        <div class="half-width">
+                            <label>City</label>
+                            {{ form.city }}
+                        </div>
+
+                        <div class="half-width">
+                            <label>Caste (Optional)</label>
+                            {{ form.caste }}
+                        </div>
+                        <div class="half-width">
+                            <label>Camera Requirement</label>
+                            {{ form.camera_requirement }}
+                        </div>
+
+                        <div class="full-width">
+                            <label>Visibility</label>
+                            {{ form.visibility }}
+                        </div>
+                    </div>
+
+                    <div
+                        style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #f0f0f0; display: flex; justify-content: flex-end; gap: 12px;">
+                        <a href="{% url 'announcements_list' %}"
+                            style="text-decoration: none; color: #6c757d; font-weight: 600; padding: 10px 25px; border-radius: 6px; border: 1px solid #ddd; font-size: 14px; background: #fff;">Cancel</a>
+                        <button type="submit"
+                            style="background: #007bff; color: white; border: none; padding: 10px 30px; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer;">Post
+                            Announcement</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Fixed Form Layout */
+    .form-grid-layout {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+    }
+
+    .full-width {
+        grid-column: span 2;
+    }
+
+    .half-width {
+        grid-column: span 1;
+    }
+
+    .form-grid-layout label {
+        display: block;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 8px;
+        font-size: 14px;
+    }
+
+    /* Django Input Overrides */
+    input,
+    select,
+    textarea {
+        width: 100% !important;
+        padding: 12px 15px !important;
+        border: 1px solid #dcdfe6 !important;
+        border-radius: 8px !important;
+        font-size: 14px !important;
+        transition: all 0.3s ease;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+        border-color: #007bff !important;
+        outline: none !important;
+        box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+    }
+
+    textarea {
+        min-height: 100px;
+    }
+
+    /* Responsive: Stack on mobile */
+    @media (max-width: 768px) {
+        .form-grid-layout {
+            grid-template-columns: 1fr;
+        }
+
+        .full-width,
+        .half-width {
+            grid-column: span 1;
+        }
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,453 @@
+{% extends "filemanager/base.html" %}
+{% block page_title %}Photo Albums{% endblock %}
+
+{% block content %}
+
+<style>
+    :root {
+        --blue: #0061f2;
+        --navy: #012970;
+        --gray: #f4f6f9;
+        --border: #e0e6ed;
+    }
+
+    /* ================= PAGE ================= */
+    .page-content {
+        background: var(--gray);
+        min-height: 100vh;
+        padding: 30px;
+    }
+
+    /* ================= GRID (SMART FIX) ================= */
+    .album-grid {
+        display: grid;
+        gap: 2rem;
+        grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+        max-width: 1200px;
+        margin: 0 auto;
+        justify-content: center;
+    }
+
+    /* ================= CARD ================= */
+    .album-card {
+        background: #fff;
+        border-radius: 14px;
+        border: 1px solid var(--border);
+        box-shadow: 0 6px 18px rgba(0, 0, 0, .06);
+        transition: .25s ease;
+        overflow: visible;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+
+
+
+    /* ================= IMAGE ================= */
+    .album-media {
+        height: 230px;
+        position: relative;
+        background: #e7f1ff;
+        overflow: hidden;
+    }
+
+    .album-cover {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .album-placeholder {
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3rem;
+        color: var(--blue);
+    }
+
+    /* ================= BODY ================= */
+    .album-body {
+        padding: 16px;
+    }
+
+    .album-title {
+        font-weight: 700;
+        font-size: 1rem;
+        color: var(--navy);
+        margin-bottom: 4px;
+    }
+
+    .album-date {
+        font-size: .8rem;
+        color: #6c757d;
+    }
+
+    /* ================= MENU ================= */
+    .album-menu {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 999;
+    }
+
+    .menu-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, .95);
+        border: 1px solid var(--border);
+        font-size: 18px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .menu-dropdown {
+        position: fixed;
+        /* 🔥 MUST BE FIXED */
+        width: 190px;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        box-shadow: 0 12px 28px rgba(0, 0, 0, .15);
+        display: none;
+        z-index: 999999;
+        /* 🚀 unbeatable */
+    }
+
+    .album-card:hover {
+        box-shadow: 0 16px 36px rgba(0, 0, 0, .12);
+    }
+
+    .menu-dropdown a {
+        display: block;
+        padding: 11px 14px;
+        font-size: .85rem;
+        color: #333;
+        text-decoration: none;
+    }
+
+    .menu-dropdown a:hover {
+        background: #f4f6f9;
+    }
+
+    /* ================= MODAL ================= */
+    .publish-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, .45);
+        z-index: 999;
+    }
+
+    .publish-modal {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 420px;
+        background: #fff;
+        border-radius: 14px;
+        z-index: 1000;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, .25);
+    }
+
+    .publish-header {
+        padding: 16px 18px;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .qr-box {
+        padding: 20px;
+        text-align: center;
+    }
+
+    .qr-box img {
+        width: 220px;
+        height: 220px;
+    }
+
+    .url-box {
+        display: flex;
+        gap: 8px;
+        padding: 16px;
+        border-top: 1px solid #eee;
+    }
+
+    .url-box input {
+        flex: 1;
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid #ddd;
+        font-size: .85rem;
+    }
+
+    .url-box button {
+        background: var(--blue);
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        padding: 0 16px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    /* ================= RESPONSIVE ================= */
+    @media(max-width:768px) {
+        .page-content {
+            padding: 16px;
+        }
+
+        .album-media {
+            height: 190px;
+        }
+    }
+
+    @media(max-width:480px) {
+        .album-media {
+            height: 160px;
+        }
+
+        .menu-dropdown {
+            right: auto;
+            left: 0;
+            /* 🔥 open inward */
+            width: 180px;
+        }
+    }
+</style>
+
+<div class="page-content">
+
+    <div class="album-grid">
+
+        {% for album in albums %}
+        <div class="album-card">
+
+            <div class="album-media">
+
+                <div class="album-menu">
+                   <button class="menu-btn"
+                        onclick="toggleMenu(
+                            event,
+                            '{{ album.public_token }}',
+                            '{{ album.id }}',
+                            {{ album.allow_download|yesno:"true,false" }},
+                            '{% url "photo_album_edit" album.id %}',
+                            '{% url "photo_album_pin" album.id %}',
+                            '{% url "album_customers" album.id %}',
+                            '{% url "photo_album_delete" album.id %}'
+                        )">
+                        ⋮
+                    </button>
+
+
+                </div>
+
+                <a href="{% url 'photo_album_detail' album.id %}">
+                    {% if album.cover_image %}
+                    <img src="{{ album.cover_image.url }}" class="album-cover">
+                    {% else %}
+                    <div class="album-placeholder">📸</div>
+                    {% endif %}
+                </a>
+            </div>
+
+            <a href="{% url 'album_face_search' album.public_token %}">
+                <div class="album-body">
+                    <div class="album-title truncate">{{ album.album_name }}</div>
+                    <div class="album-date">{{ album.event_date }}</div>
+                </div>
+            </a>
+
+        </div>
+        {% endfor %}
+
+    </div>
+
+</div>
+<!-- 🔐 SET PIN MODAL -->
+<div id="setPinModal" style="display:none;">
+    <div class="publish-overlay" onclick="closeSetPinModal()"></div>
+
+    <div class="publish-modal">
+        <div class="publish-header">
+            <h3>Set Album PIN</h3>
+            <button onclick="closeSetPinModal()">✕</button>
+        </div>
+
+        <div style="padding:20px">
+            <input type="password"
+                   id="setPinInput"
+                   maxlength="4"
+                   placeholder="Enter 4-digit PIN"
+                   style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;font-size:16px;">
+
+            <button onclick="saveAlbumPin()"
+                    style="margin-top:15px;width:100%;background:#0061f2;color:white;
+                           padding:12px;border:none;border-radius:8px;font-weight:600;">
+                Save PIN
+            </button>
+
+            <p id="setPinError" style="color:red;font-size:13px;margin-top:10px;"></p>
+        </div>
+    </div>
+</div>
+
+<div id="publishModal" style="display:none;">
+    <div class="publish-overlay" onclick="closePublishModal()"></div>
+    <div class="publish-modal">
+        <div class="publish-header">
+            <h3>Publish Album URL</h3>
+            <button onclick="closePublishModal()">✕</button>
+        </div>
+        <div class="qr-box">
+            <img id="qrImage">
+        </div>
+        <!-- DOWNLOAD TOGGLE -->
+        <div style="padding:0 20px 10px">
+            <label style="display:flex;align-items:center;gap:10px;font-size:14px;">
+                <input type="checkbox" id="downloadToggle">
+                Allow photo downloads
+            </label>
+        </div>
+        <div class="url-box">
+            <input id="albumLink" readonly>
+            <button onclick="copyAlbumUrl()">Copy</button>
+        </div>
+    </div>
+</div>
+<div class="menu-dropdown" id="globalMenu"></div>
+<script>
+    const globalMenu = document.getElementById('globalMenu');
+    let currentAlbumId = null;
+    let currentAllowDownload = true;
+
+    function toggleMenu(
+        e,
+        publicToken,
+        albumId,
+        allowDownload,
+        editUrl,
+        pinUrl,
+        customerUrl,
+        deleteUrl
+    ) {
+        e.stopPropagation();
+
+        currentAlbumId = albumId;
+        currentAllowDownload = allowDownload;
+
+        const btn = e.currentTarget.getBoundingClientRect();
+        const albumUrl = `${window.location.origin}/album/${publicToken}/`;
+
+        globalMenu.innerHTML = `
+            <a href="${editUrl}">✏ Edit</a>
+
+            <a href="#"
+               onclick="event.preventDefault(); openSetPinModal('${pinUrl}')">
+               📌 Set Pin
+            </a>
+
+            <a href="#"
+               onclick="event.preventDefault(); openPublishModal('${albumUrl}')">
+               🔗 View QR or Link
+            </a>
+
+            <a href="${customerUrl}">👥 View Customers</a>
+
+            <a href="${deleteUrl}" class="text-red-600">🗑 Delete</a>
+        `;
+
+        globalMenu.style.top = `${btn.bottom + 6}px`;
+        globalMenu.style.left = `${Math.min(btn.left, window.innerWidth - 200)}px`;
+        globalMenu.style.display = 'block';
+    }
+
+    document.addEventListener('click', () => {
+        globalMenu.style.display = 'none';
+    });
+</script>
+
+<script>
+    function openPublishModal(url) {
+        document.getElementById('publishModal').style.display = 'block';
+        document.getElementById('albumLink').value = url;
+        document.getElementById('qrImage').src =
+            "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" +
+            encodeURIComponent(url);
+        const toggle = document.getElementById("downloadToggle");
+        toggle.checked = allowDownload;
+
+        toggle.onchange = function () {
+            fetch(`/photo-albums/${currentAlbumId}/toggle-download/`, {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": "{{ csrf_token }}",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                body: "allow=" + toggle.checked
+            });
+        };
+    }
+
+    function closePublishModal() {
+        document.getElementById('publishModal').style.display = 'none';
+    }
+
+    function copyAlbumUrl() {
+        navigator.clipboard.writeText(document.getElementById('albumLink').value);
+        alert('Album link copied!');
+    }
+</script>
+<script>
+    let currentPinUrl = null;
+
+    function openSetPinModal(pinUrl) {
+        currentPinUrl = pinUrl;
+        document.getElementById("setPinInput").value = "";
+        document.getElementById("setPinError").innerText = "";
+        document.getElementById("setPinModal").style.display = "block";
+    }
+
+    function closeSetPinModal() {
+        document.getElementById("setPinModal").style.display = "none";
+    }
+
+    function saveAlbumPin() {
+        const pin = document.getElementById("setPinInput").value;
+        const errorBox = document.getElementById("setPinError");
+
+        if (pin.length !== 4 || isNaN(pin)) {
+            errorBox.innerText = "PIN must be exactly 4 digits";
+            return;
+        }
+
+        fetch(currentPinUrl, {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": "{{ csrf_token }}",
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            body: "pin=" + encodeURIComponent(pin)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                closeSetPinModal();
+                alert("PIN set successfully ✅");
+            } else {
+                errorBox.innerText = data.error || "Failed to set PIN";
+            }
+        })
+        .catch(() => {
+            errorBox.innerText = "Server error";
+        });
+    }
+</script>
+
+{% endblock %}

@@ -1,0 +1,257 @@
+{% extends 'filemanager/base.html' %}
+
+{% block title %}
+{% if event %}Edit Event{% else %}Create Event{% endif %} - ShreeSpace
+{% endblock %}
+
+{% block content %}
+<div class="event-page">
+
+    <div class="event-card">
+
+        <!-- Header -->
+        <div class="event-card-header">
+            <div class="header-left">
+                {% if event %}
+                <i class="bx bx-edit"></i>
+                <span>Edit Calendar Event</span>
+                {% else %}
+                <i class="bx bx-plus"></i>
+                <span>Create Calendar Event</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Body -->
+        <div class="event-card-body">
+
+            <form method="post" novalidate>
+                {% csrf_token %}
+
+                <div class="form-grid">
+
+                    <!-- Title -->
+                    <div class="form-group full">
+                        <label>Event Title</label>
+                        {{ form.title }}
+                        {{ form.title.errors }}
+                    </div>
+
+                    <!-- Event Type -->
+                    <div class="form-group">
+                        <label>Event Type</label>
+                        {{ form.event_type }}
+                        {{ form.event_type.errors }}
+                    </div>
+
+                    <!-- Active -->
+                    <div class="form-group checkbox">
+                        <label class="checkbox-label">
+                            {{ form.is_active }}
+                            <span>Mark as Active</span>
+                        </label>
+                        {{ form.is_active.errors }}
+                    </div>
+
+                    <!-- Start -->
+                    <div class="form-group">
+                        <label>Start Date & Time</label>
+                        {{ form.start_date }}
+                        {{ form.start_date.errors }}
+                    </div>
+
+                    <!-- End -->
+                    <div class="form-group">
+                        <label>End Date & Time</label>
+                        {{ form.end_date }}
+                        {{ form.end_date.errors }}
+                    </div>
+
+                    <!-- Remarks -->
+                    <div class="form-group full">
+                        <label>Remarks</label>
+                        {{ form.remarks }}
+                        {{ form.remarks.errors }}
+                    </div>
+
+                </div>
+
+                <hr>
+
+                <!-- Actions -->
+                <div class="action-buttons">
+                    <button type="submit" class="btn primary">
+                        <i class="bx bx-save"></i>
+                        {% if event %}Save Changes{% else %}Create Event{% endif %}
+                    </button>
+
+                    <a href="{% url 'calendar_events_list' %}" class="btn secondary">
+                        <i class="bx bx-arrow-back"></i> Back
+                    </a>
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+
+</div>
+
+<style>
+    /* Page wrapper */
+    .event-page {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 10px;
+    }
+
+    /* Card */
+    .event-card {
+        background: #ffffff;
+        border-radius: 14px;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+    }
+
+    /* Header */
+    .event-card-header {
+        background: #0d6efd;
+        color: #fff;
+        padding: 16px 20px;
+    }
+
+    .header-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 18px;
+        font-weight: 600;
+    }
+
+    /* Body */
+    .event-card-body {
+        padding: 20px;
+    }
+
+    /* Form grid */
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-group.full {
+        grid-column: span 2;
+    }
+
+    /* Labels */
+    .form-group label {
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        color: #6b7280;
+        margin-bottom: 6px;
+    }
+
+    /* Inputs */
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        padding: 10px 12px;
+        border-radius: 8px;
+        border: 1px solid #d1d5db;
+        font-size: 14px;
+        width: 100%;
+    }
+
+    .form-group textarea {
+        min-height: 100px;
+        resize: vertical;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+        outline: none;
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.15);
+    }
+
+    /* Checkbox */
+    .form-group.checkbox {
+        justify-content: flex-end;
+    }
+
+    .checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        color: #111827;
+    }
+
+    /* Errors */
+    .errorlist {
+        margin: 6px 0 0;
+        padding: 0;
+        list-style: none;
+        color: #dc3545;
+        font-size: 13px;
+    }
+
+    /* Buttons */
+    .action-buttons {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .btn {
+        padding: 10px 16px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 500;
+        font-size: 14px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: none;
+        cursor: pointer;
+    }
+
+    .btn.primary {
+        background: #0d6efd;
+        color: #fff;
+    }
+
+    .btn.secondary {
+        background: #6c757d;
+        color: #fff;
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .form-group.full {
+            grid-column: span 1;
+        }
+
+        .action-buttons {
+            flex-direction: column;
+        }
+
+        .btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}

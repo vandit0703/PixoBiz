@@ -1,0 +1,365 @@
+{% extends 'filemanager/base.html' %}
+{% block title %}My Applications{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --ss-blue: #0061f2;
+        --ss-navy: #012970;
+        --ss-light-blue: #e7f1ff;
+        --ss-gray: #f4f6f9;
+    }
+
+    .page-content {
+        padding: 30px;
+        background-color: var(--ss-gray);
+        min-height: 100vh;
+    }
+
+    .header-section {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        padding: 0 10px;
+    }
+
+    .header-section h1 {
+        color: var(--ss-navy);
+        font-weight: 800;
+        margin-bottom: 5px;
+        font-size: 1.8rem;
+    }
+
+    /* Grid for the cards */
+    .file-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+        gap: 25px;
+    }
+
+    .announcement-card {
+        background: #fff;
+        border-top: 4px solid var(--ss-blue);
+        border-radius: 12px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .announcement-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    .card-title-text {
+        color: var(--ss-navy);
+        font-size: 1.2rem;
+        font-weight: 700;
+        margin-bottom: 10px;
+    }
+
+    .info-label {
+        font-size: 0.75rem;
+        color: #899bbd;
+        text-transform: uppercase;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        margin-bottom: 5px;
+    }
+
+    .info-value {
+        color: #333;
+        font-weight: 500;
+        margin-bottom: 12px;
+        font-size: 0.9rem;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 5px 14px;
+        border-radius: 50px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    .status-pending {
+        color: #856404;
+        background: #fff3cd;
+    }
+
+    .status-accepted {
+        color: #155724;
+        background: #d4edda;
+    }
+
+    .status-rejected {
+        color: #721c24;
+        background: #f8d7da;
+    }
+
+    .card-content {
+        padding: 20px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .card-footer {
+        padding-top: 15px;
+        border-top: 1px solid #eee;
+        font-size: 0.75rem;
+        color: #999;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #666;
+    }
+
+    .empty-state p {
+        font-size: 1.1rem;
+    }
+
+    /* RESPONSIVE STYLES */
+    @media (max-width: 1024px) {
+        .page-content {
+            padding: 20px;
+        }
+
+        .file-grid {
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+        }
+
+        .header-section {
+            margin-bottom: 25px;
+        }
+
+        .header-section h1 {
+            font-size: 1.5rem;
+        }
+
+        .card-title-text {
+            font-size: 1.1rem;
+        }
+
+        .card-content {
+            padding: 18px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .page-content {
+            padding: 15px;
+            min-height: auto;
+        }
+
+        .file-grid {
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .announcement-card {
+            border-radius: 10px;
+            border-top-width: 3px;
+        }
+
+        .header-section {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 20px;
+            padding: 0 5px;
+        }
+
+        .header-section h1 {
+            font-size: 1.3rem;
+        }
+
+        .card-title-text {
+            font-size: 1rem;
+        }
+
+        .info-label {
+            font-size: 0.7rem;
+        }
+
+        .info-value {
+            font-size: 0.85rem;
+            margin-bottom: 10px;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            font-size: 0.65rem;
+        }
+
+        .card-content {
+            padding: 15px;
+        }
+
+        .card-footer {
+            padding-top: 12px;
+            font-size: 0.7rem;
+        }
+
+        .empty-state {
+            padding: 40px 15px;
+            font-size: 14px;
+        }
+
+        .empty-state p {
+            font-size: 1rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .page-content {
+            padding: 12px;
+        }
+
+        .file-grid {
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        .announcement-card {
+            border-radius: 8px;
+            border-top-width: 3px;
+        }
+
+        .header-section {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding: 0 5px;
+        }
+
+        .header-section h1 {
+            font-size: 1.2rem;
+            word-break: break-word;
+        }
+
+        .card-title-text {
+            font-size: 0.95rem;
+        }
+
+        .info-label {
+            font-size: 0.65rem;
+            margin-bottom: 3px;
+        }
+
+        .info-value {
+            font-size: 0.8rem;
+            margin-bottom: 8px;
+            word-break: break-word;
+        }
+
+        .status-badge {
+            padding: 3px 10px;
+            font-size: 0.6rem;
+        }
+
+        .card-content {
+            padding: 12px;
+        }
+
+        .card-footer {
+            padding-top: 10px;
+            font-size: 0.65rem;
+        }
+
+        .empty-state {
+            padding: 30px 12px;
+            font-size: 13px;
+        }
+
+        .empty-state p {
+            font-size: 0.95rem;
+        }
+    }
+
+    /* Landscape mobile */
+    @media (max-width: 768px) and (orientation: landscape) {
+        .page-content {
+            padding: 10px;
+        }
+
+        .file-grid {
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 12px;
+        }
+
+        .header-section h1 {
+            font-size: 1.1rem;
+        }
+
+        .card-content {
+            padding: 12px;
+        }
+    }</style>
+
+<div class="page-content">
+    <div class="header-section">
+        <h1>My Applications</h1>
+    </div>
+
+    {% if applications %}
+        <div class="file-grid">
+            {% for app in applications %}
+                <div class="announcement-card">
+                    <div class="card-content">
+                        <h3 class="card-title-text">{{ app.announcement.occasion }}</h3>
+
+                        <div class="info-label">Location</div>
+                        <div class="info-value">
+                            {{ app.announcement.city }}, {{ app.announcement.state }}
+                        </div>
+
+                        <div class="info-label">Event Dates</div>
+                        <div class="info-value">
+                            {{ app.announcement.start_date|date:"d M" }} – {{ app.announcement.end_date|date:"d M Y" }}
+                        </div>
+
+                        <div class="info-label">Requirement</div>
+                        <div class="info-value">
+                            {{ app.announcement.requirement }}
+                        </div>
+
+                        <div class="info-label">Application Status</div>
+                        <div class="info-value">
+                            {% if app.status == 'pending' %}
+                                <span class="status-badge status-pending">Pending</span>
+                            {% elif app.status == 'accepted' %}
+                                <span class="status-badge status-accepted">Accepted</span>
+                            {% else %}
+                                <span class="status-badge status-rejected">Rejected</span>
+                            {% endif %}
+                        </div>
+
+                        {% if app.message %}
+                            <div class="info-label">Message from Poster</div>
+                            <div class="info-value" style="color: #555; font-style: italic;">
+                                {{ app.message }}
+                            </div>
+                        {% endif %}
+
+                        <div class="card-footer">
+                            Applied on {{ app.applied_at|date:"M d, Y" }}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <p>You haven't applied to any announcements yet.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

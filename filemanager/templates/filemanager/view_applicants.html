@@ -1,0 +1,810 @@
+{% extends 'filemanager/base.html' %}
+
+{% block title %}Applicants – ShreeSpace{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --ss-blue: #0061f2;
+        --ss-navy: #012970;
+        --ss-light-blue: #e7f1ff;
+        --ss-gray: #f4f6f9;
+    }
+
+    .page-content {
+        padding: 30px;
+        background-color: var(--ss-gray);
+        min-height: 100vh;
+    }
+
+    .header-section {
+        margin-bottom: 30px;
+        padding: 0 10px;
+    }
+
+    .header-section h1 {
+        color: var(--ss-navy);
+        font-weight: 800;
+        margin-bottom: 5px;
+        font-size: 1.8rem;
+    }
+
+    .header-section p {
+        color: #6c757d;
+    }
+
+    .stats-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 30px;
+    }
+
+    .stat-card {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        border-left: 4px solid var(--ss-blue);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .stat-label {
+        font-size: 0.85rem;
+        color: #899bbd;
+        text-transform: uppercase;
+        font-weight: 600;
+    }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 800;
+        color: var(--ss-navy);
+        margin-top: 5px;
+    }
+
+    .filter-card {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        margin-bottom: 30px;
+        border: 1px solid #e0e6ed;
+    }
+
+    .filter-form {
+        display: flex;
+        gap: 15px;
+        align-items: end;
+        flex-wrap: wrap;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .info-label {
+        font-size: 0.75rem;
+        color: #899bbd;
+        text-transform: uppercase;
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+
+    .filter-form select,
+    .filter-form input {
+        padding: 10px 15px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        outline: none;
+    }
+
+    .btn-filter {
+        background: var(--ss-blue);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+        transition: background 0.3s;
+    }
+
+    .btn-filter:hover {
+        background: #004ec2;
+    }
+
+    .applicants-table {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+        border: 1px solid #e0e6ed;
+    }
+
+    .table-header {
+        background: #f8f9fa;
+        border-bottom: 2px solid #e0e6ed;
+        display: grid;
+        grid-template-columns: 1fr 1.2fr 1fr 0.8fr 0.8fr;
+        padding: 15px 20px;
+        font-weight: 600;
+        color: #899bbd;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .table-row {
+        display: grid;
+        grid-template-columns: 1fr 1.2fr 1fr 0.8fr 0.8fr;
+        padding: 15px 20px;
+        border-bottom: 1px solid #eee;
+        align-items: center;
+        transition: background 0.3s;
+    }
+
+    .table-row:hover {
+        background: #f8f9fa;
+    }
+
+    .table-row:last-child {
+        border-bottom: none;
+    }
+
+    .applicant-name {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 600;
+        color: var(--ss-navy);
+    }
+
+    .avatar {
+        width: 40px;
+        height: 40px;
+        background: var(--ss-blue);
+        color: white;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 0.9rem;
+    }
+
+    .announcement-title {
+        color: #333;
+        font-size: 0.95rem;
+        font-weight: 500;
+    }
+
+    .date-text {
+        color: #666;
+        font-size: 0.9rem;
+    }
+
+    .status-badge {
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        text-align: center;
+    }
+
+    .status-pending {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .status-accepted {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .status-rejected {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .action-button {
+        background: none;
+        border: none;
+        color: var(--ss-blue);
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 0.9rem;
+        transition: color 0.3s;
+        padding: 5px 10px;
+    }
+
+    .action-button:hover {
+        color: #004ec2;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #999;
+    }
+
+    .empty-state i {
+        font-size: 48px;
+        color: #ddd;
+        margin-bottom: 15px;
+        display: block;
+    }
+
+    /* RESPONSIVE STYLES */
+    @media (max-width: 1200px) {
+        .page-content {
+            padding: 20px;
+        }
+
+        .stats-container {
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            padding: 18px;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+        }
+
+        .filter-card {
+            padding: 18px;
+            margin-bottom: 25px;
+        }
+
+        .filter-form {
+            gap: 12px;
+        }
+
+        .table-header,
+        .table-row {
+            grid-template-columns: 1.5fr 1.5fr 1fr 1fr;
+            padding: 12px 16px;
+        }
+    }
+
+    @media (max-width: 1024px) {
+        .page-content {
+            padding: 16px;
+        }
+
+        .header-section {
+            margin-bottom: 20px;
+            padding: 0 5px;
+        }
+
+        .header-section h1 {
+            font-size: 1.5rem;
+        }
+
+        .header-section p {
+            font-size: 13px;
+        }
+
+        .stats-container {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            padding: 16px;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+        }
+
+        .stat-value {
+            font-size: 1.6rem;
+        }
+
+        .filter-card {
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+
+        .filter-form {
+            gap: 10px;
+        }
+
+        .filter-form select,
+        .filter-form input,
+        .btn-filter {
+            padding: 8px 12px;
+            font-size: 13px;
+        }
+
+        .table-header,
+        .table-row {
+            grid-template-columns: 1.5fr 1.5fr 1fr 0.8fr;
+            padding: 12px 14px;
+            gap: 8px;
+        }
+
+        .applicant-name {
+            gap: 8px;
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            font-size: 0.85rem;
+        }
+
+        .action-button {
+            padding: 4px 8px;
+            font-size: 0.85rem;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .page-content {
+            padding: 12px;
+            min-height: auto;
+        }
+
+        .header-section {
+            margin-bottom: 15px;
+            padding: 0 3px;
+        }
+
+        .header-section h1 {
+            font-size: 1.3rem;
+        }
+
+        .header-section p {
+            font-size: 12px;
+        }
+
+        .stats-container {
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .stat-card {
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+        }
+
+        .stat-value {
+            font-size: 1.4rem;
+            margin-top: 4px;
+        }
+
+        .filter-card {
+            padding: 12px;
+            margin-bottom: 16px;
+            border-radius: 8px;
+        }
+
+        .filter-form {
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-group {
+            width: 100%;
+        }
+
+        .filter-form select,
+        .filter-form input,
+        .btn-filter {
+            width: 100%;
+            padding: 8px 10px;
+            font-size: 13px;
+            border-radius: 6px;
+        }
+
+        .applicants-table {
+            border-radius: 8px;
+        }
+
+        .table-header {
+            display: none;
+        }
+
+        .table-row {
+            grid-template-columns: 1fr;
+            padding: 12px;
+            border-left: 4px solid var(--ss-blue);
+            gap: 8px;
+            margin-bottom: 10px;
+            background: white;
+            border: 1px solid #e0e6ed;
+            border-radius: 8px;
+        }
+
+        .table-row:last-child {
+            border-bottom: 1px solid #e0e6ed;
+        }
+
+        .table-row:hover {
+            background: #f8f9fa;
+        }
+
+        .table-row::before {
+            content: attr(data-label);
+            font-weight: 600;
+            color: #899bbd;
+            text-transform: uppercase;
+            font-size: 0.7rem;
+            display: block;
+        }
+
+        .applicant-name {
+            gap: 10px;
+            font-size: 0.9rem;
+        }
+
+        .avatar {
+            width: 35px;
+            height: 35px;
+            font-size: 0.8rem;
+            flex-shrink: 0;
+        }
+
+        .announcement-title {
+            font-size: 0.9rem;
+        }
+
+        .date-text {
+            font-size: 0.85rem;
+        }
+
+        .status-badge {
+            padding: 4px 10px;
+            font-size: 0.7rem;
+        }
+
+        .action-button {
+            padding: 4px 6px;
+            font-size: 0.8rem;
+            display: inline-block;
+            margin-right: 4px;
+        }
+
+        .empty-state {
+            padding: 40px 15px;
+            font-size: 14px;
+        }
+
+        .empty-state i {
+            font-size: 36px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .page-content {
+            padding: 10px;
+        }
+
+        .header-section {
+            margin-bottom: 12px;
+        }
+
+        .header-section h1 {
+            font-size: 1.15rem;
+            word-break: break-word;
+        }
+
+        .header-section p {
+            font-size: 11px;
+        }
+
+        .stats-container {
+            grid-template-columns: 1fr;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .stat-card {
+            padding: 10px;
+            border-radius: 6px;
+        }
+
+        .stat-label {
+            font-size: 0.65rem;
+        }
+
+        .stat-value {
+            font-size: 1.2rem;
+            margin-top: 3px;
+        }
+
+        .filter-card {
+            padding: 10px;
+            margin-bottom: 12px;
+            border-radius: 6px;
+        }
+
+        .filter-form {
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group {
+            width: 100%;
+        }
+
+        .info-label {
+            font-size: 0.65rem;
+            margin-bottom: 4px;
+        }
+
+        .filter-form select,
+        .filter-form input,
+        .btn-filter {
+            width: 100%;
+            padding: 8px;
+            font-size: 12px;
+            border-radius: 5px;
+        }
+
+        .applicants-table {
+            border-radius: 6px;
+        }
+
+        .table-row {
+            grid-template-columns: 1fr;
+            padding: 10px;
+            border-left: 3px solid var(--ss-blue);
+            gap: 6px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+        }
+
+        .applicant-name {
+            gap: 8px;
+            font-size: 0.85rem;
+        }
+
+        .avatar {
+            width: 32px;
+            height: 32px;
+            font-size: 0.75rem;
+        }
+
+        .announcement-title {
+            font-size: 0.85rem;
+        }
+
+        .date-text {
+            font-size: 0.8rem;
+        }
+
+        .status-badge {
+            padding: 3px 8px;
+            font-size: 0.65rem;
+        }
+
+        .action-button {
+            padding: 4px;
+            font-size: 0.75rem;
+            margin-right: 2px;
+        }
+
+        .empty-state {
+            padding: 30px 10px;
+            font-size: 12px;
+        }
+
+        .empty-state i {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .empty-state h3 {
+            font-size: 1rem;
+            margin: 10px 0;
+        }
+
+        .empty-state p {
+            font-size: 0.9rem;
+        }
+    }
+
+    /* Landscape mobile */
+    @media (max-width: 768px) and (orientation: landscape) {
+        .page-content {
+            padding: 8px;
+        }
+
+        .header-section h1 {
+            font-size: 1.1rem;
+        }
+
+        .stats-container {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .filter-card {
+            padding: 8px;
+        }
+
+        .filter-form {
+            gap: 6px;
+        }
+
+        .table-row {
+            padding: 8px;
+        }
+    }
+
+    /* Large screens */
+    @media (min-width: 1800px) {
+        .page-content {
+            padding: 40px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .stats-container {
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            padding: 24px;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+        }
+
+        .filter-card {
+            padding: 24px;
+            margin-bottom: 40px;
+        }
+
+        .filter-form {
+            gap: 20px;
+        }
+
+        .table-header,
+        .table-row {
+            padding: 18px 24px;
+        }
+    }
+</style>
+
+<div class="page-content">
+    <div class="header-section">
+        <h1>Job Applicants</h1>
+        <p>Manage applicants for your job postings</p>
+    </div>
+
+    <!-- Stats Section -->
+    <div class="stats-container">
+        <div class="stat-card">
+            <div class="stat-label">Total Applications</div>
+            <div class="stat-value">{{ total_applications }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Your Announcements</div>
+            <div class="stat-value">{{ user_announcements.count }}</div>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="filter-card">
+        <form method="GET" class="filter-form">
+            <div class="form-group" style="flex: 1;">
+                <label class="info-label">Filter by Announcement</label>
+                <select name="announcement">
+                    <option value="">All Announcements</option>
+                    {% for ann in user_announcements %}
+                        <option value="{{ ann.id }}" {% if selected_announcement|stringformat:"s" == ann.id|stringformat:"s" %}selected{% endif %}>
+                            {{ ann.occasion }} ({{ ann.applicants.count }} applications)
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn-filter">
+                <i class='bx bx-search-alt'></i> Filter
+            </button>
+            {% if selected_announcement %}
+                <a href="{% url 'view_applicants' %}" style="background: #6c757d; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 600; display: flex; align-items: center;">
+                    Clear
+                </a>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- Applicants Table -->
+    <div class="applicants-table">
+        {% if applicants %}
+            <div class="table-header">
+                <div>Applicant</div>
+                <div>Job Posting</div>
+                <div>Applied Date</div>
+                <div>Status</div>
+                <div>Action</div>
+            </div>
+
+            {% for applicant in applicants %}
+                <div class="table-row">
+                    <div class="applicant-name">
+                        <div class="avatar">{{ applicant.user.username|slice:":1"|upper }}</div>
+                        <div>
+                            <div>{{ applicant.user.username }}</div>
+                            <div style="font-size: 0.8rem; color: #999; font-weight: normal;">{{ applicant.user.email }}</div>
+                        </div>
+                    </div>
+                    <div class="announcement-title">{{ applicant.announcement.occasion }}</div>
+                    <div class="date-text">{{ applicant.applied_at|date:"M d, Y" }}</div>
+                    <div>
+                        <span class="status-badge status-{{ applicant.status }}">
+                            {{ applicant.get_status_display }}
+                        </span>
+                    </div>
+                    <div>
+                        <button class="action-button" onclick="updateStatus({{ applicant.id }}, 'accepted')" title="Accept">
+                            <i class='bx bx-check'></i> Accept
+                        </button>
+                        <button class="action-button" onclick="updateStatus({{ applicant.id }}, 'rejected')" title="Reject" style="color: #dc3545;">
+                            <i class='bx bx-x'></i> Reject
+                        </button>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <i class='bx bx-inbox'></i>
+                <h3>No Applicants Yet</h3>
+                <p>You don't have any applicants for your announcements.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function updateStatus(applicantId, newStatus) {
+    const statusText = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
+    const confirmed = confirm(`Are you sure you want to ${statusText.toLowerCase()} this application?`);
+    
+    if (!confirmed) return;
+
+    fetch('/announcements/applicants/update/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+        },
+        body: JSON.stringify({
+            applicant_id: applicantId,
+            status: newStatus
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Status updated successfully!');
+            location.reload();
+        } else {
+            alert(data.message || 'Error updating status');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Connection error. Please try again.');
+    });
+}
+</script>
+
+{% endblock %}

@@ -1,0 +1,199 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Album Locked</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <style>
+        :root {
+            --blue: #0061f2;
+            --navy: #012970;
+            --gray: #6c757d;
+        }
+
+        /* ===== PIN MODAL ===== */
+        .pin-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 99999;
+            display: none;
+        }
+
+        .pin-modal.active {
+            display: block;
+        }
+
+        .pin-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(1, 41, 112, 0.75);
+            backdrop-filter: blur(6px);
+        }
+
+        .pin-box {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #fff;
+            border-radius: 16px;
+            padding: 28px 26px;
+            width: 320px;
+            text-align: center;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
+            animation: scaleIn .25s ease;
+        }
+
+        @keyframes scaleIn {
+            from {
+                transform: translate(-50%, -50%) scale(.92);
+                opacity: .5;
+            }
+
+            to {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 1;
+            }
+        }
+
+        .pin-box h2 {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: var(--navy);
+            margin-bottom: 6px;
+        }
+
+        .pin-box p {
+            font-size: .85rem;
+            color: var(--gray);
+            margin-bottom: 18px;
+        }
+
+        .pin-input {
+            width: 100%;
+            font-size: 1.7rem;
+            letter-spacing: 10px;
+            text-align: center;
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid #ddd;
+            outline: none;
+        }
+
+        .pin-input:focus {
+            border-color: var(--blue);
+        }
+
+        .pin-btn {
+            width: 100%;
+            margin-top: 18px;
+            background: var(--blue);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            padding: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: .95rem;
+        }
+
+        .pin-btn:hover {
+            background: #004ec2;
+        }
+
+        .pin-error {
+            color: #dc3545;
+            font-size: .8rem;
+            margin-top: 10px;
+            min-height: 18px;
+        }
+
+        .pin-footer {
+            margin-top: 10px;
+            font-size: .7rem;
+            color: #999;
+        }
+
+        @media (max-width: 420px) {
+            .pin-box {
+                width: 90%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- 🔐 PIN MODAL -->
+    <div id="pinModal" class="pin-modal">
+        <div class="pin-overlay"></div>
+
+        <div class="pin-box">
+            <h2>🔒 Album Locked</h2>
+            <p>Enter the 4-digit PIN to view full album</p>
+
+            <form id="pinForm">
+                {% csrf_token %}
+                <input type="password" id="pinInput" class="pin-input" maxlength="4" inputmode="numeric"
+                    autocomplete="one-time-code" placeholder="••••" required>
+
+                <button type="submit" class="pin-btn">
+                    Unlock Album
+                </button>
+            </form>
+
+            <div id="pinError" class="pin-error"></div>
+            <div class="pin-footer">Access required only once per session</div>
+        </div>
+    </div>
+
+    <script>
+        const pinModal = document.getElementById("pinModal");
+        const pinInput = document.getElementById("pinInput");
+        const pinError = document.getElementById("pinError");
+
+        // 🔓 Open modal automatically when album is locked
+        pinModal.classList.add("active");
+        pinInput.focus();
+
+        // Auto-submit after 4 digits
+        pinInput.addEventListener("input", () => {
+            if (pinInput.value.length === 4) {
+                document.getElementById("pinForm").requestSubmit();
+            }
+        });
+
+        document.getElementById("pinForm").addEventListener("submit", function (e) {
+            e.preventDefault();
+
+            fetch("{% url 'photo_album_verify_pin' album.public_token %}", {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value,
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                body: "pin=" + encodeURIComponent(pinInput.value)
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        // 🔓 unlocked → reload full album
+                        window.location.reload();
+                    } else {
+                        pinError.innerText = data.error || "Invalid PIN";
+                        pinInput.value = "";
+                        pinInput.focus();
+                    }
+                })
+                .catch(() => {
+                    pinError.innerText = "Server error. Try again.";
+                });
+        });
+    </script>
+
+</body>
+
+</html>

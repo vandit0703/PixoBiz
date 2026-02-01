@@ -1,0 +1,149 @@
+{% extends "filemanager/base.html" %}
+{% block page_title %}Edit Photo Album{% endblock %}
+
+{% block content %}
+
+<style>
+    .edit-card {
+        max-width: 600px;
+        margin: 30px auto;
+        background: #fff;
+        padding: 25px;
+        border-radius: 12px;
+        border: 1px solid #e0e6ed;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+    }
+
+    .edit-card h2 {
+        font-size: 1.2rem;
+        font-weight: 700;
+        margin-bottom: 20px;
+        color: #012970;
+    }
+
+    .form-group {
+        margin-bottom: 15px;
+    }
+
+    label {
+        font-weight: 600;
+        font-size: 0.85rem;
+        display: block;
+        margin-bottom: 6px;
+    }
+
+    input[type="text"],
+    input[type="date"],
+    input[type="file"] {
+        width: 100%;
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid #dce3eb;
+        font-size: 0.9rem;
+    }
+
+    .checkbox-group {
+        display: flex;
+        gap: 20px;
+        margin-top: 10px;
+    }
+
+    .checkbox-group label {
+        font-weight: 500;
+    }
+
+    .actions {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 25px;
+    }
+
+    .btn {
+        padding: 10px 18px;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+    }
+
+    .btn-primary {
+        background: #0061f2;
+        color: #fff;
+    }
+
+    .btn-secondary {
+        background: #e9ecef;
+        color: #333;
+    }
+
+    .cover-preview {
+        margin-top: 10px;
+    }
+
+    .cover-preview img {
+        max-height: 120px;
+        border-radius: 8px;
+        border: 1px solid #e0e6ed;
+    }
+</style>
+
+<div class="edit-card">
+    <h2>Edit Photo Album</h2>
+
+    <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <div class="form-group">
+            <label>Album Name</label>
+            <input type="text" name="album_name" value="{{ album.album_name }}" required>
+        </div>
+
+        <div class="form-group">
+            <label>Event Date</label>
+            <input type="date" name="event_date" value="{{ album.event_date|date:'Y-m-d' }}" required>
+        </div>
+
+        <div class="form-group">
+            <label>Cover Image</label>
+            <input type="file" name="cover_image">
+            {% if album.cover_image %}
+            <div class="cover-preview">
+                <img src="{{ album.cover_image.url }}">
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="checkbox-group">
+            <label>
+                <input type="checkbox" name="allow_download" {% if album.allow_download %}checked{% endif %}>
+                Allow Download
+            </label>
+
+            <label>
+                <input type="checkbox" name="watermark" {% if album.watermark %}checked{% endif %}>
+                Watermark
+            </label>
+        </div>
+
+        <div class="form-group">
+            <label>Album PIN (4 digits)</label>
+            <input type="text" name="pin" maxlength="4" pattern="[0-9]{4}" placeholder="Leave blank to keep existing" value="" />
+            {% if album.pin %}
+            <div class="text-xs text-gray-500 mt-2">Current PIN is set. Leave blank to keep.</div>
+            {% endif %}
+        </div>
+
+        <div class="actions">
+            <a href="{% url 'photo_album_list' %}" class="btn btn-secondary">
+                Cancel
+            </a>
+
+            <button type="submit" class="btn btn-primary">
+                Save Changes
+            </button>
+        </div>
+    </form>
+</div>
+
+{% endblock %}

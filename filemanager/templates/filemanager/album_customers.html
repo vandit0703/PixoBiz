@@ -1,0 +1,213 @@
+{% extends "filemanager/base.html" %}
+{% block title %}Album Visitors{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --ss-blue: #0061f2;
+        --ss-navy: #012970;
+        --ss-gray: #f4f6f9;
+        --ss-border: #e0e6ed;
+        --ss-text: #2c3e50;
+    }
+
+    .page-wrap {
+        padding: 30px;
+        background: var(--ss-gray);
+        min-height: 100vh;
+    }
+
+    /* Header */
+    .page-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 25px;
+    }
+
+    .page-header h1 {
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: var(--ss-navy);
+    }
+
+    .page-header p {
+        margin-top: 4px;
+        color: #6c757d;
+    }
+
+    /* Card */
+    .card-box {
+        background: #fff;
+        border-radius: 14px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.05);
+        border: 1px solid var(--ss-border);
+        overflow: hidden;
+    }
+
+    /* Table */
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    thead {
+        background: #f1f5ff;
+    }
+
+    th {
+        padding: 14px;
+        text-align: left;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        color: var(--ss-navy);
+        font-weight: 700;
+    }
+
+    td {
+        padding: 14px;
+        font-size: 0.9rem;
+        color: var(--ss-text);
+        border-top: 1px solid var(--ss-border);
+        vertical-align: middle;
+    }
+
+    tbody tr:hover {
+        background: #f9fbff;
+    }
+
+    /* Badges */
+    .badge {
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        display: inline-block;
+    }
+
+    .badge-blue {
+        background: #e7f1ff;
+        color: var(--ss-blue);
+    }
+
+    .badge-green {
+        background: #e6f9f0;
+        color: #1e7e34;
+    }
+
+    /* Empty state */
+    .empty-state {
+        padding: 60px 20px;
+        text-align: center;
+        color: #6c757d;
+    }
+
+    .empty-state i {
+        font-size: 50px;
+        color: #cfd8dc;
+        margin-bottom: 15px;
+        display: block;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        table, thead, tbody, th, td, tr {
+            display: block;
+        }
+
+        thead {
+            display: none;
+        }
+
+        tr {
+            margin-bottom: 15px;
+            border: 1px solid var(--ss-border);
+            border-radius: 12px;
+            padding: 10px;
+            background: #fff;
+        }
+
+        td {
+            border: none;
+            padding: 8px 10px;
+        }
+
+        td::before {
+            content: attr(data-label);
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #899bbd;
+            display: block;
+            margin-bottom: 2px;
+        }
+    }
+</style>
+
+<div class="page-wrap">
+
+    <!-- Header -->
+    <div class="page-header">
+        <div>
+            <h1>Album Visitors</h1>
+            <p>{{ album.album_name }} – Face search history</p>
+        </div>
+    </div>
+
+    <!-- Card -->
+    <div class="card-box">
+
+        {% if customers %}
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Visitor Name</th>
+                    <th>Mobile Number</th>
+                    <th>Matched Photos</th>
+                    <th>Searched At</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for c in customers %}
+                <tr>
+                    <td data-label="#"> {{ forloop.counter }} </td>
+
+                    <td data-label="Visitor Name">
+                        <strong>{{ c.visitor_name }}</strong>
+                    </td>
+
+                    <td data-label="Mobile Number">
+                        {{ c.visitor_mobile }}
+                    </td>
+
+                    <td data-label="Matches">
+                        <span class="badge badge-blue">
+                            {{ c.match_count }} photos
+                        </span>
+                    </td>
+
+                    <td data-label="Searched At">
+                        <span class="badge badge-green">
+                            {{ c.searched_at|date:"d M Y, h:i A" }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% else %}
+        <div class="empty-state">
+            <i class='bx bx-user-x'></i>
+            <h3>No visitors yet</h3>
+            <p>No one has searched faces in this album.</p>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+
+{% endblock %}

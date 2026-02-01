@@ -1,0 +1,424 @@
+{% extends 'filemanager/base.html' %}
+
+{% block title %}Announcements – ShreeSpace{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --ss-blue: #0061f2;
+        --ss-navy: #012970;
+        --ss-light-blue: #e7f1ff;
+        --ss-gray: #f4f6f9;
+    }
+
+    .header-section {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        padding: 0 10px;
+    }
+
+    /* Grid for the cards */
+    .file-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 20px;
+    }
+
+    .announcement-card {
+        background: #fff;
+        border-top: 4px solid var(--ss-blue);
+        /* Moved accent to top for a cleaner look */
+        border-radius: 12px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .announcement-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    .card-title-text {
+        color: var(--ss-navy);
+        font-size: 1.2rem;
+        font-weight: 700;
+    }
+
+    /* Label and Value styling */
+    .info-label {
+        font-size: 0.75rem;
+        color: #899bbd;
+        text-transform: uppercase;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        margin-bottom: 2px;
+    }
+
+    .info-value {
+        color: #333;
+        font-weight: 500;
+        margin-bottom: 15px;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .info-value i {
+        color: var(--ss-blue);
+        width: 16px;
+    }
+
+    .badge-custom {
+        padding: 5px 14px;
+        border-radius: 50px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    .badge-public {
+        background: #d1e7ff;
+        color: #0052cc;
+    }
+
+    .badge-active {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .btn-create {
+        background: var(--ss-blue);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: 0.3s;
+    }
+
+    .btn-create:hover {
+        background: #004ec2;
+        color: white;
+    }
+
+    /* Requirement text area */
+    .requirement-box {
+        background: var(--ss-gray);
+        padding: 12px;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        color: #555;
+        line-height: 1.5;
+        margin-bottom: 15px;
+        border-left: 3px solid #ddd;
+    }
+
+    .btn-apply {
+        background: #28a745;
+        color: white;
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: background 0.3s;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+    }
+
+    .btn-apply:hover {
+        background: #218838;
+    }
+
+    .btn-apply:disabled {
+        background: #6c757d;
+        cursor: not-allowed;
+        opacity: 0.6;
+    }
+
+    .card-footer-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: auto;
+        padding-top: 15px;
+        border-top: 1px solid #eee;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    /* ============================= */
+    /* CLEAN RESPONSIVE FIX */
+    /* ============================= */
+
+    /* Header buttons wrap */
+    @media (max-width: 768px) {
+        .header-section {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 12px;
+        }
+
+        .header-section>div:last-child {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .header-section a {
+            flex: 1;
+            text-align: center;
+        }
+    }
+
+    /* Filter form stack */
+    @media (max-width: 768px) {
+        form[method="GET"] {
+            grid-template-columns: 1fr !important;
+        }
+
+        form[method="GET"] button,
+        form[method="GET"] a {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+
+    /* Card inner grids stack */
+    @media (max-width: 640px) {
+        .card-body>div[style*="grid-template-columns"] {
+            grid-template-columns: 1fr !important;
+        }
+    }
+
+    /* Footer actions stack */
+    @media (max-width: 640px) {
+        .card-footer-actions {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .card-footer-actions button {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+
+    /* Mobile padding */
+    @media (max-width: 640px) {
+        .page-content {
+            padding: 12px !important;
+        }
+
+        .announcement-card {
+            padding: 0;
+        }
+    }
+</style>
+
+<div class="page-content" style="padding: 30px; background-color: var(--ss-gray); min-height: 100vh;">
+
+    <div class="header-section">
+        <div>
+            <h1 style="color: var(--ss-navy); font-weight: 800; margin-bottom: 5px; font-size: 1.8rem;">Job Feed</h1>
+            <p style="color: #6c757d;">Detailed view of all active requirements</p>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <a href="{% url 'my_applications' %}" class="btn-create"
+                style="text-decoration: none; background: #6f42c1;">
+                <i class='bx bx-briefcase'></i> My Applications
+            </a>
+            <a href="{% url 'view_applicants' %}" class="btn-create"
+                style="text-decoration: none; background: #17a2b8;">
+                <i class='bx bx-user-check'></i> View Applicants
+            </a>
+            <a href="{% url 'announcement_create' %}" class="btn-create" style="text-decoration: none;">
+                <i class='bx bx-plus-circle'></i> New Announcement
+            </a>
+        </div>
+    </div>
+    <div
+        style="background: white; padding: 20px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); border: 1px solid #e0e6ed;">
+        <form method="GET" action="{% url 'announcements_list' %}"
+            style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 15px; align-items: end;">
+            <div>
+                <label class="info-label">Search City</label>
+                <div style="position: relative;">
+                    <i class='bx bx-map'
+                        style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--ss-blue);"></i>
+                    <input type="text" name="city" value="{{ request.GET.city }}" placeholder="Enter city name..."
+                        style="width: 100%; padding: 10px 10px 10px 35px; border: 1px solid #ddd; border-radius: 8px; font-size: 0.9rem; outline: none;">
+                </div>
+            </div>
+            <div>
+                <label class="info-label">Search State</label>
+                <div style="position: relative;">
+                    <i class='bx bx-buildings'
+                        style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--ss-blue);"></i>
+                    <input type="text" name="state" value="{{ request.GET.state }}" placeholder="Enter state name..."
+                        style="width: 100%; padding: 10px 10px 10px 35px; border: 1px solid #ddd; border-radius: 8px; font-size: 0.9rem; outline: none;">
+                </div>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button type="submit" class="btn-create" style="border: none; cursor: pointer; height: 42px;">
+                    <i class='bx bx-search-alt'></i> Filter
+                </button>
+                {% if request.GET.city or request.GET.state %}
+                <a href="{% url 'announcements_list' %}"
+                    style="background: #f8d7da; color: #721c24; padding: 10px 15px; border-radius: 8px; text-decoration: none; font-size: 0.9rem; font-weight: 600; display: flex; align-items: center;">
+                    Clear
+                </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+    {% if announcements %}
+    <div class="file-grid">
+        {% for a in announcements %}
+        <div class="card announcement-card">
+            <div class="card-header d-flex justify-content-between align-items-center"
+                style="background:none; border-bottom: 1px solid #f0f0f0; padding: 20px;">
+                <span class="card-title-text">{{ a.occasion }}</span>
+                <span class="badge-custom badge-public">{{ a.visibility|title }}</span>
+            </div>
+
+            <div class="card-body" style="padding: 20px;">
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div>
+                        <div class="info-label">Dates</div>
+                        <div class="info-value"><i class='bx bx-calendar'></i> {{ a.start_date|date:"d M" }} - {{
+                            a.end_date|date:"d M Y" }}</div>
+                    </div>
+                    <div>
+                        <div class="info-label">Location</div>
+                        <div class="info-value"><i class='bx bx-map'></i> {{ a.city }}, {{ a.state }}</div>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div>
+                        <div class="info-label">Event Time</div>
+                        <div class="info-value"><i class='bx bx-time'></i> {{ a.time }}</div>
+                    </div>
+                    <div>
+                        <div class="info-label">Party Side</div>
+                        <div class="info-value"><i class='bx bx-group'></i> {{ a.get_side_display|default:a.side }}
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div>
+                        <div class="info-label">Caste Requirement</div>
+                        <div class="info-value"><i class='bx bx-user-pin'></i> {{ a.caste|default:"Any" }}</div>
+                    </div>
+                    <div>
+                        <div class="info-label">Camera Specs</div>
+                        <div class="info-value"><i class='bx bx-camera'></i> {{
+                            a.get_camera_requirement_display|default:a.camera_requirement }}</div>
+                    </div>
+                </div>
+
+                <div class="info-label">Requirement Details</div>
+                <div class="requirement-box">
+                    {{ a.requirement|linebreaksbr }}
+                </div>
+
+                <div class="card-footer-actions">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div
+                            style="width: 32px; height: 32px; background: var(--ss-blue); color: white; border-radius: 8px; display: grid; place-items: center; font-weight: bold; font-size: 0.9rem;">
+                            {{ a.user.username|slice:":1"|upper }}
+                        </div>
+                        <div>
+                            <div style="font-size: 0.85rem; font-weight: 600; color: var(--ss-navy);">{{ a.user.username
+                                }}</div>
+                            <div style="font-size: 0.7rem; color: #999;">Posted: {{ a.created_at|date:"M d" }}</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        {% if a.is_active %}
+                        <span class="badge-custom badge-active">● Active</span>
+                        {% endif %}
+
+                        {% if a.id in applied_ids %}
+                        <button class="btn-apply" disabled>
+                            <i class="bx bx-check"></i> Applied
+                        </button>
+                        {% elif a.user != request.user %}
+                        <button class="btn-apply" onclick="quickApply({{ a.id }}, '{{ a.occasion }}')">
+                            Apply
+                        </button>
+                        {% else %}
+                        <button class="btn-apply" disabled>
+                            Your Post
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div
+        style="text-align: center; padding: 100px 0; background: white; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05);">
+        <i class='bx bx-box' style="font-size: 3rem; color: #ddd; margin-bottom: 15px;"></i>
+        <p style="color: #999; font-weight: 500;">No announcements found. Be the first to post one!</p>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    function quickApply(announcementId, occasion) {
+        const btn = event.target.closest('button');
+
+        // Show confirmation dialog
+        const userConfirmed = confirm(`Apply for "${occasion}"?\n\nYou will be registered as an applicant for this job.`);
+
+        if (!userConfirmed) return;
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="bx bx-loader-alt bx-spin"></i> Applying...';
+
+        // Send apply request
+        fetch('/announcements/apply/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+            },
+            body: JSON.stringify({
+                announcement_id: announcementId
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    btn.innerHTML = '<i class="bx bx-check"></i> Applied';
+                    btn.style.background = '#17a2b8';
+                    btn.disabled = true;
+                    alert('Applied successfully! The job poster will be notified.');
+                } else {
+                    alert(data.message || 'Error applying. Please try again.');
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bx bx-check-circle"></i> Apply';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Connection error. Please try again.');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bx bx-check-circle"></i> Apply';
+            });
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,243 @@
+{% extends 'filemanager/base.html' %}
+
+{% block title %}{{ event.title }} - ShreeSpace{% endblock %}
+
+{% block content %}
+<div class="event-page">
+
+    <div class="event-card">
+        <!-- Header -->
+        <div class="event-card-header">
+            <div class="header-left">
+                <i class="bx bx-calendar-event"></i>
+                <span>Event Details</span>
+            </div>
+
+            {% if event.is_active %}
+                <span class="status-badge active">Active</span>
+            {% else %}
+                <span class="status-badge inactive">Inactive</span>
+            {% endif %}
+        </div>
+
+        <!-- Body -->
+        <div class="event-card-body">
+
+            <h2 class="event-title">{{ event.title }}</h2>
+            <hr>
+
+            <div class="detail-grid">
+                <div class="detail-group">
+                    <label>Event Type</label>
+                    <span class="badge primary">
+                        {{ event.get_event_type_display }}
+                    </span>
+                </div>
+
+                <div class="detail-group">
+                    <label>Created By</label>
+                    <p>
+                        {{ event.created_by.get_full_name|default:event.created_by.username }}
+                    </p>
+                </div>
+
+                <div class="detail-group">
+                    <label>Start Date & Time</label>
+                    <p>
+                        <i class="bx bx-calendar"></i>
+                        {{ event.start_date|date:"d M Y, H:i" }}
+                    </p>
+                </div>
+
+                <div class="detail-group">
+                    <label>End Date & Time</label>
+                    <p>
+                        <i class="bx bx-calendar"></i>
+                        {{ event.end_date|date:"d M Y, H:i" }}
+                    </p>
+                </div>
+            </div>
+
+            {% if event.remarks %}
+            <div class="detail-group full">
+                <label>Remarks</label>
+                <p>{{ event.remarks }}</p>
+            </div>
+            {% endif %}
+
+            <div class="detail-group full">
+                <label>Created At</label>
+                <p>{{ event.created_at|date:"d M Y, H:i:s" }}</p>
+            </div>
+
+            <hr>
+
+            <!-- Actions -->
+            <div class="action-buttons">
+                <a href="{% url 'calendar_event_update' event.pk %}" class="btn warning">
+                    <i class="bx bx-edit"></i> Edit
+                </a>
+                <a href="{% url 'calendar_event_delete' event.pk %}" class="btn danger">
+                    <i class="bx bx-trash"></i> Delete
+                </a>
+                <a href="{% url 'calendar_events_list' %}" class="btn secondary">
+                    <i class="bx bx-arrow-back"></i> Back
+                </a>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+<style>
+/* Page wrapper */
+.event-page {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 10px;
+}
+
+/* Card */
+.event-card {
+    background: #ffffff;
+    border-radius: 14px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+}
+
+/* Header */
+.event-card-header {
+    background: #0dcaf0;
+    color: #fff;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+/* Status badge */
+.status-badge {
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.status-badge.active {
+    background: #198754;
+}
+
+.status-badge.inactive {
+    background: #6c757d;
+}
+
+/* Body */
+.event-card-body {
+    padding: 20px;
+}
+
+.event-title {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+/* Details */
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+}
+
+.detail-group label {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #6b7280;
+    margin-bottom: 4px;
+    display: block;
+}
+
+.detail-group p {
+    margin: 0;
+    font-size: 15px;
+    color: #111827;
+}
+
+.detail-group.full {
+    margin-top: 16px;
+}
+
+/* Badges */
+.badge.primary {
+    background: #0d6efd;
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 13px;
+}
+
+/* Buttons */
+.action-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.btn {
+    padding: 10px 14px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn.warning {
+    background: #ffc107;
+    color: #000;
+}
+
+.btn.danger {
+    background: #dc3545;
+    color: #fff;
+}
+
+.btn.secondary {
+    background: #6c757d;
+    color: #fff;
+}
+
+/* Responsive tweaks */
+@media (max-width: 600px) {
+    .event-title {
+        font-size: 20px;
+    }
+
+    .event-card-body {
+        padding: 16px;
+    }
+
+    .action-buttons {
+        flex-direction: column;
+    }
+
+    .btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+</style>
+{% endblock %}
