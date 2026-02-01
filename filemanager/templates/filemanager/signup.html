@@ -5,497 +5,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign Up - ShreeSpace</title>
-    <link rel="stylesheet" href="{% static 'css/shreespace.css' %}">
-    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
-    <script src="https://otpless.com/v1/auth.js" data-client-id="D901SJQIPMXTXH58UC6VAZILUU69EKHZ"></script>
+    <title>Sign Up - PixoBiz</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: "Poppins", sans-serif;
-        }
-
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #faf5ff;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
-        }
-
-        .auth-container {
-            width: 100%;
-            max-width: 450px;
-        }
-
-        .auth-card {
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            padding: 40px;
-            animation: slideUp 0.5s ease;
-        }
-
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .auth-header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .auth-logo {
-            width: 60px;
-            height: 60px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 16px;
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-        }
-
-        .auth-logo i {
-            font-size: 32px;
-            color: white;
-        }
-
-        .auth-header h1 {
-            font-size: 28px;
-            font-weight: 700;
-            color: #2c3e50;
-            margin-bottom: 8px;
-        }
-
-        .auth-header p {
-            font-size: 14px;
-            color: #888;
-        }
-
-        .form-group {
-            margin-bottom: 16px;
-        }
-
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
-
-        .form-row .form-group {
-            margin-bottom: 0;
-        }
-
-        label {
-            display: block;
-            font-size: 13px;
-            font-weight: 600;
-            color: #2c3e50;
-            margin-bottom: 6px;
-        }
-
-        input[type="text"],
-        input[type="email"],
-        input[type="password"] {
-            width: 100%;
-            padding: 11px 14px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 13px;
-            font-family: "Poppins", sans-serif;
-            transition: all 0.3s ease;
-        }
-
-        input[type="text"]:focus,
-        input[type="email"]:focus,
-        input[type="password"]:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .btn-submit {
-            width: 100%;
-            padding: 12px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 10px;
-        }
-
-        .btn-submit:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
-        }
-
-        .btn-submit:active {
-            transform: translateY(0);
-        }
-
-        .error-message {
-            background-color: #f8d7da;
-            color: #721c24;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            font-size: 14px;
-            border-left: 4px solid #f5c6cb;
-        }
-
-        .auth-footer {
-            text-align: center;
-            margin-top: 24px;
-            padding-top: 24px;
-            border-top: 1px solid #e0e0e0;
-        }
-
-        .auth-footer p {
-            font-size: 14px;
-            color: #666;
-        }
-
-        .auth-footer a {
-            color: #667eea;
-            text-decoration: none;
-            font-weight: 600;
-            transition: color 0.3s ease;
-        }
-
-        .auth-footer a:hover {
-            color: #764ba2;
-        }
-
-        @media (max-width: 768px) {
-            body {
-                padding: 15px;
-            }
-
-            .auth-container {
-                max-width: 90vw;
-            }
-
-            .auth-card {
-                padding: 30px 20px;
-            }
-
-            .auth-logo {
-                width: 50px;
-                height: 50px;
-            }
-
-            .auth-logo i {
-                font-size: 26px;
-            }
-
-            .auth-header h1 {
-                font-size: 24px;
-            }
-
-            .auth-header p {
-                font-size: 13px;
-            }
-
-            .form-row {
-                grid-template-columns: 1fr 1fr;
-                gap: 10px;
-            }
-
-            label {
-                font-size: 13px;
-            }
-
-            input[type="text"],
-            input[type="email"],
-            input[type="password"] {
-                padding: 10px 12px;
-                font-size: 16px;
-            }
-
-            .btn-submit {
-                padding: 11px;
-                font-size: 15px;
-            }
-
-            .error-message,
-            .auth-footer {
-                font-size: 13px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            body {
-                padding: 10px;
-            }
-
-            .auth-container {
-                max-width: 100%;
-                width: 100%;
-            }
-
-            .auth-card {
-                padding: 20px 16px;
-                border-radius: 12px;
-                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            }
-
-            .auth-header {
-                margin-bottom: 20px;
-            }
-
-            .auth-logo {
-                width: 45px;
-                height: 45px;
-                margin: 0 auto 12px;
-            }
-
-            .auth-logo i {
-                font-size: 24px;
-            }
-
-            .auth-header h1 {
-                font-size: 20px;
-                margin-bottom: 6px;
-            }
-
-            .auth-header p {
-                font-size: 12px;
-                color: #999;
-            }
-
-            .form-row {
-                grid-template-columns: 1fr;
-                gap: 0;
-            }
-
-            .form-group {
-                margin-bottom: 14px;
-            }
-
-            label {
-                font-size: 12px;
-                margin-bottom: 6px;
-            }
-
-            input[type="text"],
-            input[type="email"],
-            input[type="password"] {
-                width: 100%;
-                padding: 10px 12px;
-                font-size: 16px;
-                border-radius: 6px;
-            }
-
-            .btn-submit {
-                width: 100%;
-                padding: 11px;
-                font-size: 14px;
-                margin-top: 8px;
-                border-radius: 6px;
-            }
-
-            .error-message {
-                padding: 10px;
-                font-size: 12px;
-                margin-bottom: 16px;
-            }
-
-            .auth-footer {
-                margin-top: 16px;
-                padding-top: 16px;
-                font-size: 12px;
-            }
-
-            .auth-footer p {
-                margin: 0;
-            }
-        }
-
-        /* Landscape mode on mobile */
-        @media (max-width: 768px) and (orientation: landscape) {
-            .auth-card {
-                padding: 15px;
-            }
-
-            .auth-header {
-                margin-bottom: 10px;
-            }
-
-            .auth-header h1 {
-                font-size: 18px;
-            }
-
-            .form-group {
-                margin-bottom: 10px;
-            }
-
-            .form-row {
-                grid-template-columns: 1fr 1fr;
-                gap: 8px;
-            }
-
-            input[type="text"],
-            input[type="email"],
-            input[type="password"] {
-                padding: 8px 10px;
-                font-size: 14px;
-            }
+            font-family: 'Inter', sans-serif;
         }
     </style>
 </head>
 
 <body>
-    <div class="auth-container">
-        <div class="auth-card">
-            <div class="auth-header">
-                <div class="auth-logo">
-                    <i class="bx bx-cloud"></i>
-                </div>
-                <h1>ShreeSpace</h1>
-                <p>Create your account</p>
+    <div class="w-full max-w-md mx-auto bg-gradient-to-br from-purple-100 to-blue-100 rounded-2xl shadow-2xl p-8 border border-gray-200">
+        <div class="text-center mb-8">
+            <div class="mx-auto mb-4 flex items-center justify-center w-14 h-14 rounded-xl bg-gradient-to-br from-purple-600 to-blue-600 shadow-lg">
+                <iconify-icon icon="solar:user-id-linear" class="text-white text-3xl"></iconify-icon>
             </div>
+            <h1 class="text-3xl font-extrabold text-gray-900 mb-1 tracking-tight">PixoBiz</h1>
+            <p class="text-gray-700 text-base font-medium">Create your PixoBiz account</p>
+        </div>
 
-            {% if error %}
-            <div class="error-message">
-                <i class="bx bx-exclamation-circle"></i> {{ error }}
+        {% if error %}
+        <div class="bg-red-100 border-l-4 border-red-500 text-red-800 p-4 rounded mb-6 text-sm font-semibold">
+            <iconify-icon icon="solar:danger-triangle-bold" class="inline mr-1"></iconify-icon> {{ error }}
+        </div>
+        {% endif %}
+
+        <form method="POST" onsubmit="return validateSignupForm()">
+            {% csrf_token %}
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label for="first_name" class="block text-sm font-bold text-gray-800 mb-1">First Name</label>
+                    <input type="text" id="first_name" name="first_name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none bg-white text-gray-900 font-semibold" placeholder="First name" required>
+                </div>
+                <div>
+                    <label for="last_name" class="block text-sm font-bold text-gray-800 mb-1">Last Name</label>
+                    <input type="text" id="last_name" name="last_name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none bg-white text-gray-900 font-semibold" placeholder="Last name" required>
+                </div>
             </div>
-            {% endif %}
-
-            <form method="POST">
-                {% csrf_token %}
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="first_name">First Name</label>
-                        <input type="text" id="first_name" name="first_name" placeholder="First name">
-                    </div>
-                    <div class="form-group">
-                        <label for="last_name">Last Name</label>
-                        <input type="text" id="last_name" name="last_name" placeholder="Last name">
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="username">Username</label>
-                    <input type="text" id="username" name="username" required placeholder="Choose a username">
-                </div>
-
-                <div class="form-group">
-                    <label for="email">Email</label>
-                    <input type="email" id="email" name="email" required placeholder="Enter your email">
-                </div>
-                <div class="form-group">
-                    <label for="phone">Phone Number</label>
-                    <input type="text" id="phone" name="phone" maxlength="10" pattern="[0-9]{10}" required
-                        placeholder="10-digit mobile number">
-                </div>
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" name="password" required placeholder="At least 6 characters">
-                </div>
-
-                <div class="form-group">
-                    <label for="password_confirm">Confirm Password</label>
-                    <input type="password" id="password_confirm" name="password_confirm" required
-                        placeholder="Confirm password">
-                </div>
-
-                <button type="button" class="btn-submit" onclick="startOtpless()">
-                    <i class="bx bx-user-plus"></i> Verify Phone & Create Account
-                </button>
-            </form>
-
-            <div class="auth-footer">
-                <p>Already have an account? <a href="{% url 'login' %}">Sign in here</a></p>
+            <div class="mb-4">
+                <label for="username" class="block text-sm font-bold text-gray-800 mb-1">Username</label>
+                <input type="text" id="username" name="username" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none bg-white text-gray-900 font-semibold" placeholder="Choose a username" required>
             </div>
+            <div class="mb-4">
+                <label for="email" class="block text-sm font-bold text-gray-800 mb-1">Email</label>
+                <input type="email" id="email" name="email" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none bg-white text-gray-900 font-semibold" placeholder="Enter your email" required>
+            </div>
+            <div class="mb-4">
+                <label for="phone" class="block text-sm font-bold text-gray-800 mb-1">Phone Number</label>
+                <input type="text" id="phone" name="phone" maxlength="10" pattern="[0-9]{10}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none bg-white text-gray-900 font-semibold" placeholder="10-digit mobile number" required>
+            </div>
+            <div class="mb-4">
+                <label for="password" class="block text-sm font-bold text-gray-800 mb-1">Password</label>
+                <input type="password" id="password" name="password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none bg-white text-gray-900 font-semibold" placeholder="At least 6 characters" required>
+            </div>
+            <div class="mb-6">
+                <label for="password_confirm" class="block text-sm font-bold text-gray-800 mb-1">Confirm Password</label>
+                <input type="password" id="password_confirm" name="password_confirm" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none bg-white text-gray-900 font-semibold" placeholder="Confirm password" required>
+            </div>
+            <button type="submit" class="w-full py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-extrabold rounded-lg shadow-lg hover:from-purple-700 hover:to-blue-700 transition-all text-lg flex items-center justify-center gap-2">
+                <iconify-icon icon="solar:user-plus-bold" class="text-xl"></iconify-icon> Create Account
+            </button>
+        </form>
+        <div class="text-center mt-6 text-gray-700 text-sm font-medium">
+            Already have an account?
+            <a href="{% url 'login' %}" class="text-purple-700 font-bold hover:underline">Sign in here</a>
         </div>
     </div>
 </body>
 
 </html>
 <script>
-
-    function startOtpless() {
-        const phone = document.getElementById("phone").value.trim();
-
-        if (!/^[0-9]{10}$/.test(phone)) {
-            alert("Enter valid 10-digit phone number");
-            return;
-        }
-
-        window.otplessSignin = function (response) {
-            console.log("OTPless response:", response);
-
-            if (!response || !response.success) {
-                alert("OTP failed ❌");
-                return;
-            }
-
-            const token = response.token || response.data?.token;
-
-            if (!token) {
-                alert("OTP token missing");
-                return;
-            }
-
-            submitSignup(token);
-        };
-
-        // ✅ OFFICIAL METHOD
-        window.OTPless.signIn({
-            phone: phone,
-            countryCode: "+91"
-        });
+// Validate phone and password match on signup
+function validateSignupForm() {
+    const phone = document.getElementById('phone').value.trim();
+    if (!/^[0-9]{10}$/.test(phone)) {
+        alert('Please enter a valid 10-digit phone number.');
+        document.getElementById('phone').focus();
+        return false;
     }
-
-
-    function submitSignup(token) {
-        const payload = {
-            token: token,
-            phone: document.getElementById("phone").value,
-            first_name: document.getElementById("first_name").value,
-            last_name: document.getElementById("last_name").value,
-            username: document.getElementById("username").value,
-            email: document.getElementById("email").value,
-            password: document.getElementById("password").value,
-        };
-
-        fetch("{% url 'signup' %}", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-CSRFToken": "{{ csrf_token }}"
-            },
-            body: JSON.stringify(payload)
-        })
-            .then(res => res.json())
-            .then(res => {
-                if (res.success) {
-                    window.location.href = "{% url 'dashboard' %}";
-                } else {
-                    alert(res.error || "Signup failed");
-                }
-            })
-            .catch(err => {
-                console.error(err);
-                alert("Server error");
-            });
+    const password = document.getElementById('password').value;
+    const passwordConfirm = document.getElementById('password_confirm').value;
+    if (password !== passwordConfirm) {
+        alert('Passwords do not match.');
+        document.getElementById('password_confirm').focus();
+        return false;
     }
+    if (password.length < 6) {
+        alert('Password must be at least 6 characters.');
+        document.getElementById('password').focus();
+        return false;
+    }
+    return true;
+}
 </script>

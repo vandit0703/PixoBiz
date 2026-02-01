@@ -98,11 +98,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'photoface.wsgi.application'
 
-
-OTPLESS_CLIENT_ID = "D901SJQIPMXTXH58UC6VAZILUU69EKHZ"
-OTPLESS_CLIENT_SECRET = "2vourg1p9ae7e4c37l86h5iaccsftqlt"
-X_FRAME_OPTIONS = "ALLOWALL"
-
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 

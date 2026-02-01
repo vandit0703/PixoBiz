@@ -336,18 +336,38 @@ class Profile(models.Model):
 
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
+from django.utils import timezone
 
 
 @receiver(post_save, sender=User)
 def create_or_update_user_profile(sender, instance, created, **kwargs):
+    from .models import Plan
     if created:
-        Profile.objects.create(user=instance)
+        # Assign free plan to new user
+        free_plan, _ = Plan.objects.get_or_create(name="Free", defaults={"storage_limit_gb": 10, "price": 0})
+        Profile.objects.create(user=instance, plan=free_plan)
     else:
         try:
             instance.profile.save()
         except Exception:
-            # if profile missing for any reason, create it
             Profile.objects.get_or_create(user=instance)
+            
+# Nightly deletion task for free users
+from django_cron import CronJobBase, Schedule
+from .models import Profile, UserFile
+
+class DeleteFreeUserFilesCronJob(CronJobBase):
+    RUN_AT_TIMES = ['00:30']  # 12:30 AM every night
+    schedule = Schedule(run_at_times=RUN_AT_TIMES)
+    code = 'filemanager.delete_free_user_files'
+
+    def do(self):
+        free_users = Profile.objects.filter(plan__name="Free")
+        for profile in free_users:
+            files = UserFile.objects.filter(user=profile.user)
+            for f in files:
+                f.file.delete(save=False)
+                f.delete()
 
 
 class UploadSession(models.Model):

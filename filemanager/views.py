@@ -19,7 +19,7 @@ import os
 import calendar
 import shutil
 from datetime import datetime, timedelta
-
+from urllib.parse import quote as urlquote
 import requests
 from .tasks import generate_thumbnail, extract_face_embeddings
 from django.db.models import Q
@@ -41,9 +41,14 @@ from django.conf import settings
 def dashboard(request):
     return render(request, "filemanager/base.html")
 
+ALLOWED_EXTENSIONS = [
+    ".jpg", ".jpeg", ".png", ".webp", ".tif", ".tiff",
+    ".cr2", ".cr3", ".nef", ".arw", ".dng", ".raf", ".orf", ".rw2", ".pef",
+    ".mp4", ".mov", ".avi", ".mkv", ".mts", ".m2ts",
+    ".psd", ".xmp", ".zip"
+]
 IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"]
-OTPLESS_CLIENT_ID = "D901SJQIPMXTXH58UC6VAZILUU69EKHZ"
-OTPLESS_CLIENT_SECRET = "2vourg1p9ae7e4c37l86h5iaccsftqlt"
+
 
 # Chunking threshold: files larger than this MUST be uploaded via chunked upload (10 MB)
 
@@ -126,11 +131,14 @@ def upload_files(request):
         if profile and not profile.has_space_for(f.size):
             return JsonResponse({"error": "Storage quota exceeded. Upload blocked by plan limit."}, status=400)
 
+
         ext = os.path.splitext(f.name)[1].lower()
+        if ext not in ALLOWED_EXTENSIONS:
+            return JsonResponse({"error": f"File type {ext} not allowed."}, status=400)
+
         if ext in IMAGE_EXTENSIONS:
             file_type = "image"
-            
-        elif ext in [".mp4", ".webm", ".ogg"]:
+        elif ext in [".mp4", ".webm", ".ogg", ".mov", ".avi", ".mkv", ".mts", ".m2ts"]:
             file_type = "video"
         else:
             file_type = "file"
@@ -147,6 +155,30 @@ def upload_files(request):
         if file_type == "image":
             generate_thumbnail.delay(user_file.id)
             extract_face_embeddings.delay(user_file.id)
+# ============================
+# FILE OPEN VIEW (for all allowed types)
+# ============================
+
+
+@login_required
+def open_file(request, file_id):
+    user_file = get_object_or_404(UserFile, id=file_id, user=request.user)
+    ext = os.path.splitext(user_file.original_name)[1].lower()
+    if ext not in ALLOWED_EXTENSIONS:
+        return HttpResponseForbidden("File type not allowed.")
+
+    # For images and videos, show inline; for others, force download
+    as_attachment = False if ext in IMAGE_EXTENSIONS or ext in [
+        ".mp4", ".webm", ".ogg", ".mov", ".avi", ".mkv", ".mts", ".m2ts"
+    ] else True
+
+    response = FileResponse(user_file.file.open("rb"), as_attachment=as_attachment)
+    response["Content-Disposition"] = (
+        ("inline; filename=\"%s\"" % urlquote(user_file.original_name))
+        if not as_attachment else
+        ("attachment; filename=\"%s\"" % urlquote(user_file.original_name))
+    )
+    return response
 
     return JsonResponse({"status": "success", "uploaded": uploaded_count})
 
@@ -1396,53 +1428,65 @@ def login_view(request):
     
     return render(request, "filemanager/login.html")
 
-@csrf_exempt
+from django.contrib.auth import login
+from django.contrib.auth.models import User
+from django.db import IntegrityError
+from django.shortcuts import render, redirect
+
 def signup_view(request):
     if request.method == "POST":
+
+        phone = request.POST.get("phone")
+        password = request.POST.get("password")
+        password_confirm = request.POST.get("password_confirm")
+        username = request.POST.get("username") or phone
+        email = request.POST.get("email")
+        first_name = request.POST.get("first_name")
+        last_name = request.POST.get("last_name")
+
+        # validate
+        if not phone or not password:
+            return render(request, "filemanager/signup.html", {
+                "error": "Missing required fields"
+            })
+
+        if password != password_confirm:
+            return render(request, "filemanager/signup.html", {
+                "error": "Passwords do not match"
+            })
+
+        if not phone.isdigit() or len(phone) != 10:
+            return render(request, "filemanager/signup.html", {
+                "error": "Phone must be 10 digits"
+            })
+
+        if User.objects.filter(username=username).exists():
+            return render(request, "filemanager/signup.html", {
+                "error": "User already exists"
+            })
+
         try:
-            data = json.loads(request.body)
-        except json.JSONDecodeError:
-            return JsonResponse({"success": False, "error": "Invalid JSON"})
+            user = User.objects.create_user(
+                username=username,
+                password=password,
+                email=email,
+                first_name=first_name or "",
+                last_name=last_name or ""
+            )
+        except IntegrityError:
+            return render(request, "filemanager/signup.html", {
+                "error": "User creation failed"
+            })
 
-        token = data.get("token")
-        phone = data.get("phone")
-        password = data.get("password")
-
-        if not token or not phone or not password:
-            return JsonResponse({"success": False, "error": "Missing required fields"})
-
-
-        response = requests.post(
-            "https://api.otpless.app/v1/token/verify",
-            headers={
-                "clientId": OTPLESS_CLIENT_ID,
-                "clientSecret": OTPLESS_CLIENT_SECRET,
-                "Content-Type": "application/json",
-            },
-            json={"token": token},
-            timeout=10
-        )
-
-        result = response.json()
-        print("OTPless verify result:", result)
-
-        if not result.get("success"):
-            return JsonResponse({"success": False, "error": "OTP verification failed"})
-
-        user, created = User.objects.get_or_create(
-            username=data.get("username") or phone,
-            defaults={
-                "email": data.get("email"),
-                "first_name": data.get("first_name"),
-                "last_name": data.get("last_name"),
-            }
-        )
-
-        if created:
-            user.set_password(data.get("password"))
-            user.save()
+        # assign plan
+        from .models import Plan, Profile
+        plan = Plan.objects.filter(storage_limit_gb=10, price=0).first()
+        profile, _ = Profile.objects.get_or_create(user=user)
+        if plan:
+            profile.plan = plan
+            profile.save()
 
         login(request, user)
-        return JsonResponse({"success": True})
+        return redirect("file_manager")   # or dashboard
 
     return render(request, "filemanager/signup.html")
