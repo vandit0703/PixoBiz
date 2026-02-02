@@ -572,7 +572,8 @@
                 <input type="hidden" class="file-url" value="{{ f.file.url }}">
                 <input type="hidden" class="file-type" value="{{ f.file_type }}">
                 <input type="hidden" class="file-name" value="{{ f.original_name }}">
-
+                <input type="hidden" class="file-thumb" value="{% if f.thumbnail %}{{ f.thumbnail.url }}{% endif %}">
+                <input type="hidden" class="file-preview" value="{% if f.preview %}{{ f.preview.url }}{% endif %}">
             </div>
             {% endfor %}
         </div>
@@ -654,6 +655,9 @@
      class="fixed bottom-6 right-6 bg-white border rounded-xl shadow-xl p-4 w-80 hidden z-50">
 
     <p class="text-sm font-semibold mb-1">Uploading files…</p>
+    <p id="fileCountStatus" class="text-xs text-gray-600 mb-1">
+        Files: 0 / 0
+    </p>
 
     <p id="currentFile"
        class="text-xs text-gray-600 truncate mb-2">
@@ -1059,9 +1063,14 @@ function previewAlbumCover(event) {
     document.getElementById("folderInput").addEventListener("change", submitUpload);
 
     async function submitUpload() {
+
         const files = this.files;
         if (!files.length) return;
+        let totalFiles = files.length;
+        let completedFiles = 0;
 
+        document.getElementById("fileCountStatus").innerText =
+            `Files: 0 / ${totalFiles}`;
         const CHUNK_SIZE = 100 * 1024 * 1024;
 
         {% if current_folder %}
@@ -1151,6 +1160,9 @@ function previewAlbumCover(event) {
                         formatBytes(uploadedBytes) + " uploaded";
                     document.getElementById("remainingSize").innerText =
                         formatBytes(totalBytes - uploadedBytes) + " remaining";
+                    completedFiles++;
+                    document.getElementById("fileCountStatus").innerText =
+                        `Files: ${completedFiles} / ${totalFiles}`;
                 }
             } else {
                 document.getElementById("currentFile").innerText =
@@ -1166,7 +1178,9 @@ function previewAlbumCover(event) {
                     body: fd,
                     headers: { "X-CSRFToken": getCSRFToken() }
                 });
-
+                completedFiles++;
+                document.getElementById("fileCountStatus").innerText =
+                    `Files: ${completedFiles} / ${totalFiles}`;
                 uploadedBytes += file.size;
 
                 const percent = Math.round((uploadedBytes / totalBytes) * 100);
@@ -1179,8 +1193,8 @@ function previewAlbumCover(event) {
                     formatBytes(totalBytes - uploadedBytes) + " remaining";
             }
         }
-
-        document.getElementById("currentFile").innerText = "Upload completed ✅";
+        document.getElementById("currentFile").innerText =
+            `Upload completed ✅ (${completedFiles} files)`;
         setTimeout(() => location.reload(), 900);
     }
 </script>
@@ -1295,6 +1309,8 @@ function previewAlbumCover(event) {
     document.querySelectorAll(".file-url").forEach((el, i) => {
         files.push({
             url: el.value,
+            thumb: document.querySelectorAll(".file-thumb")[i].value,
+            preview: document.querySelectorAll(".file-preview")[i].value,
             type: document.querySelectorAll(".file-type")[i].value,
             name: document.querySelectorAll(".file-name")[i].value
         });
@@ -1411,15 +1427,24 @@ function previewAlbumCover(event) {
     }
 
     function showFile() {
+        hideAll();
         const file = files[currentIndex];
         const ext = file.url.split('.').pop().toLowerCase();
 
-        // IMAGE
-        if (["jpg", "jpeg", "png", "gif", "webp"].includes(ext)) {
+        const RAW = ["cr2","cr3","nef","arw","dng","raf","orf","rw2","pef"];
+
+        // IMAGE + RAW
+        if (["jpg","jpeg","png","gif","webp"].includes(ext) || RAW.includes(ext)) {
             const img = document.getElementById("preview-img");
-            img.src = "";
-            img.src = file.url;
+
+            if (["jpg","jpeg","png","gif","webp"].includes(ext)) {
+                img.src = file.url;
+            }
+            else if (RAW.includes(ext)) {
+                img.src = file.preview || file.thumb;
+            }
             img.classList.remove("hidden");
+            return;
         }
 
         // VIDEO

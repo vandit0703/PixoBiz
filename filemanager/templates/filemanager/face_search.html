@@ -6,18 +6,7 @@
 
 {% block content %}
 {# Album cover background logic #}
-{% if album.cover_image %}
-<style>
-    body, .page-content {
-        background: url('{{ album.cover_image.url }}') center center/cover no-repeat fixed !important;
-        background-blend-mode: lighten;
-    }
-    .search-card, .header-section, #results, #status {
-        background: rgba(255,255,255,0.92) !important;
-        backdrop-filter: blur(2px);
-    }
-</style>
-{% endif %}
+
 
 <style>
     :root {
@@ -29,8 +18,15 @@
 
     .page-content {
         padding: 30px;
-        background-color: var(--ss-gray);
+        background: transparent;
         min-height: 100vh;
+    }
+
+    .page-inner {
+        background: var(--ss-gray);
+        min-height: 100vh;
+        border-top-left-radius: 20px;
+        border-top-right-radius: 20px;
     }
 
     .header-section {
@@ -241,7 +237,7 @@
     }
 
     .download-btn {
-        background: rgba(255,255,255,0.96);
+        background: rgba(255, 255, 255, 0.96);
         border: none;
         padding: 6px 8px;
         border-radius: 8px;
@@ -249,11 +245,13 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         transition: transform 0.12s ease;
     }
 
-    .download-btn:hover { transform: translateY(-2px); }
+    .download-btn:hover {
+        transform: translateY(-2px);
+    }
 
     .empty-state {
         text-align: center;
@@ -367,6 +365,14 @@
             padding: 12px;
         }
 
+        .album-hero {
+            height: 35vh;
+        }
+
+        .page-content {
+            padding-top: 37vh;
+        }
+
         .search-card {
             padding: 16px;
             margin: 0;
@@ -464,109 +470,138 @@
             /* single column */
         }
     }
-</style>
 
+    .album-hero {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 50vh;
+        /* HALF SCREEN */
+        background: url('{{ album.cover_image.url }}') center center / cover no-repeat;
+        z-index: 0;
+    }
+
+    /* push page content below hero */
+    .page-content {
+        padding-top: 52vh;
+    }
+
+    .album-hero::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.25);
+    }
+</style>
+{% if album.cover_image %}
+<div class="album-hero"></div>
+{% endif %}
 <div class="page-content">
-    <div class="header-section" style="border-radius: 15px;">
-        <div style="display: flex; align-items: center; border-radius: 15px;">
-            <div
-                class="w-10 h-10 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center shrink-0 border border-blue-100/50">
-                <span class="iconify" data-icon="lucide:scan-face" data-width="20" data-stroke-width="1.5"></span>
+    <div class="page-inner">
+        <div class="header-section" style="border-radius: 15px;">
+            <div style="display: flex; align-items: center; border-radius: 15px;">
+                <div
+                    class="w-10 h-10 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center shrink-0 border border-blue-100/50">
+                    <span class="iconify" data-icon="lucide:scan-face" data-width="20" data-stroke-width="1.5"></span>
+                </div>
+                <div style="border-radius: 15px;">
+                    <h1>Face Search</h1>
+                    <p>Find photos with face recognition AI</p>
+                </div>
             </div>
-            <div style="border-radius: 15px;">
-                <h1>Face Search</h1>
-                <p>Find photos with face recognition AI</p>
-            </div>
-        </div>
-        <div class="w-full md:w-auto inline-flex justify-center items-center gap-2 px-5 py-3 rounded-lg ...">
-            <a href="{% url 'public_album_detail' album.public_token %}" class="inline-flex items-center gap-2 px-5 py-2 rounded-lg
+            <div class="w-full md:w-auto inline-flex justify-center items-center gap-2 px-5 py-3 rounded-lg ...">
+                <a href="{% url 'public_album_detail' album.public_token %}" class="inline-flex items-center gap-2 px-5 py-2 rounded-lg
               bg-blue-600 text-white font-semibold
               hover:bg-blue-700 transition">
-                🔒 View Full Album
-                {% if album.pin %}
-                <span class="text-xs bg-white/20 px-2 py-0.5 rounded">
-                    PIN required
-                </span>
-                {% endif %}
-            </a>
+                    🔒 View Full Album
+                    {% if album.pin %}
+                    <span class="text-xs bg-white/20 px-2 py-0.5 rounded">
+                        PIN required
+                    </span>
+                    {% endif %}
+                </a>
+            </div>
         </div>
-    </div>
 
-    <div class="search-card">
-        <form id="searchForm" enctype="multipart/form-data" class="search-form">
-            {% csrf_token %}
-            <input type="hidden" name="album_token" value="{{ album.public_token }}">
-            <div class="form-group">
-                <label class="info-label">Full Name</label>
-                <input type="text" name="visitor_name" id="visitorName" placeholder="Enter your full name" required>
-            </div>
+        <div class="search-card">
+            <form id="searchForm" enctype="multipart/form-data" class="search-form">
+                {% csrf_token %}
+                <input type="hidden" name="album_token" value="{{ album.public_token }}">
+                <div class="form-group">
+                    <label class="info-label">Full Name</label>
+                    <input type="text" name="visitor_name" id="visitorName" placeholder="Enter your full name" required>
+                </div>
 
-            <div class="form-group">
-                <label class="info-label">Mobile Number</label>
-                <input type="text" name="visitor_mobile" id="visitorMobile" placeholder="Enter mobile number"
-                    maxlength="10" required>
-            </div>
+                <div class="form-group">
+                    <label class="info-label">Mobile Number</label>
+                    <input type="text" name="visitor_mobile" id="visitorMobile" placeholder="Enter mobile number"
+                        maxlength="10" required>
+                </div>
 
-            <div class="form-group">
-                <label class="info-label">Take Live Selfie</label>
+                <div class="form-group">
+                    <label class="info-label">Take Live Selfie</label>
 
-                <!-- Live Camera -->
-                <div id="cameraWrap" style="display:flex; flex-direction:column; align-items:center;">
-                    <video id="video" autoplay playsinline style="display:none; width:100%; max-width:420px;
+                    <!-- Live Camera -->
+                    <div id="cameraWrap" style="display:flex; flex-direction:column; align-items:center;">
+                        <video id="video" autoplay playsinline style="display:none; width:100%; max-width:420px;
                       border-radius:12px; border:1px solid #ddd; margin-bottom:10px; object-fit:cover;">
-                    </video>
+                        </video>
 
-                    <!-- Capture Button (large on mobile) -->
-                    <button type="button" id="captureBtn" class="btn-search" disabled
-                        style="padding:14px 18px; font-size:16px; border-radius:10px;">
-                        📸 Open Camera
-                    </button>
+                        <!-- Capture Button (large on mobile) -->
+                        <button type="button" id="captureBtn" class="btn-search" disabled
+                            style="padding:14px 18px; font-size:16px; border-radius:10px;">
+                            📸 Open Camera
+                        </button>
 
-                    <!-- Preview -->
-                    <div id="selfiePreviewBox" style="display:none; margin-top:15px; width:100%; max-width:420px;">
-                        <img id="selfiePreview"
-                            style="width:100%; border-radius:12px; border:1px solid #ddd; object-fit:cover;">
+                        <!-- Preview -->
+                        <div id="selfiePreviewBox" style="display:none; margin-top:15px; width:100%; max-width:420px;">
+                            <img id="selfiePreview"
+                                style="width:100%; border-radius:12px; border:1px solid #ddd; object-fit:cover;">
+                        </div>
+
+                        <canvas id="canvas" style="display:none;"></canvas>
+                        <input type="hidden" name="selfie" id="selfieInput" required>
                     </div>
 
-                    <canvas id="canvas" style="display:none;"></canvas>
-                    <input type="hidden" name="selfie" id="selfieInput" required>
-                </div>
+
+                    <div class="form-group full-width">
+                        <button type="submit" id="searchBtn" class="btn-search" disabled>
+                            <i class='bx bx-search-alt'></i> Search
+                        </button>
+                    </div>
 
 
-                <div class="form-group full-width">
-                    <button type="submit" id="searchBtn" class="btn-search" disabled>
-                        <i class='bx bx-search-alt'></i> Search
-                    </button>
-                </div>
+            </form>
 
-
-        </form>
-
-        <div id="status"></div>
-    </div>
-
-    <div id="resultsActions" style="max-width:1100px; margin: 8px auto 0; display:flex; justify-content:flex-end; gap:8px;">
-        <button id="downloadAllBtn" class="btn-search" style="display:none; align-items:center; gap:8px;">Download All</button>
-    </div>
-
-    <div id="results"></div>
-
-    <div id="lightbox" role="dialog" aria-modal="true">
-        <button class="lightbox-close" onclick="closeLightbox()" aria-label="Close">
-            <i class='bx bx-x' style="font-size: 24px;"></i>
-        </button>
-
-        <button class="lightbox-nav lightbox-prev" onclick="prevImage(event)" aria-label="Previous">
-            <i class='bx bx-chevron-left'></i>
-        </button>
-
-        <div class="lightbox-container" onclick="closeLightbox()">
-            <img id="lightbox-img" src="" alt="Full view" class="lightbox-image" onclick="event.stopPropagation()">
+            <div id="status"></div>
         </div>
 
-        <button class="lightbox-nav lightbox-next" onclick="nextImage(event)" aria-label="Next">
-            <i class='bx bx-chevron-right'></i>
-        </button>
+        <div id="resultsActions"
+            style="max-width:1100px; margin: 8px auto 0; display:flex; justify-content:flex-end; gap:8px;">
+            <button id="downloadAllBtn" class="btn-search" style="display:none; align-items:center; gap:8px;">Download
+                All</button>
+        </div>
+
+        <div id="results"></div>
+
+        <div id="lightbox" role="dialog" aria-modal="true">
+            <button class="lightbox-close" onclick="closeLightbox()" aria-label="Close">
+                <i class='bx bx-x' style="font-size: 24px;"></i>
+            </button>
+
+            <button class="lightbox-nav lightbox-prev" onclick="prevImage(event)" aria-label="Previous">
+                <i class='bx bx-chevron-left'></i>
+            </button>
+
+            <div class="lightbox-container" onclick="closeLightbox()">
+                <img id="lightbox-img" src="" alt="Full view" class="lightbox-image" onclick="event.stopPropagation()">
+            </div>
+
+            <button class="lightbox-nav lightbox-next" onclick="nextImage(event)" aria-label="Next">
+                <i class='bx bx-chevron-right'></i>
+            </button>
+        </div>
     </div>
 </div>
 <script>
@@ -660,7 +695,7 @@
                     resultItem.className = 'result-item';
                     resultItem.onclick = () => openLightbox(index);
 
-                    const filename = img.name ? img.name.replace(/'/g, "\\'") : `match-${index+1}.jpg`;
+                    const filename = img.name ? img.name.replace(/'/g, "\\'") : `match-${index + 1}.jpg`;
 
                     resultItem.innerHTML = `
                         <img src="${img.url}" alt="Match" loading="lazy">
@@ -797,7 +832,7 @@
                 if (!r.ok) throw new Error('Failed to fetch ' + u);
                 const b = await r.blob();
                 const ext = (u.split('.').pop() || 'jpg').split(/\#|\?/)[0];
-                folder.file(`match-${i+1}.${ext}`, b);
+                folder.file(`match-${i + 1}.${ext}`, b);
             });
             await Promise.all(promises);
 

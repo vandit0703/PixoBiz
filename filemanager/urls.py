@@ -1,5 +1,7 @@
 # filemanager/urls.py
 from django.urls import path
+
+from faceapp import views
 from .views import (
     album_face_search_view,
     delete_file,
@@ -73,6 +75,7 @@ urlpatterns = [
         photo_album_detail,
         name="photo_album_detail"
     ),
+    path("albums/<int:album_id>/<int:folder_id>/",photo_album_detail, name="photo_album_folder"),
     path(
         "folders/<int:folder_id>/share/photo-album/",
         create_photo_album,
@@ -143,7 +146,7 @@ urlpatterns = [
         shared_folder_view,
         name="shared_folder"
     ),
-
+    path("shared/folder/<str:token>/<int:folder_id>/", shared_folder_view, name="shared_folder_open"),
     # SECURE DOWNLOAD
     path(
         "shared/file/<uuid:token>/<int:file_id>/download/",
@@ -153,7 +156,6 @@ urlpatterns = [
     path("folders/create/", create_folder, name="create_folder"),
     path("folders/<int:folder_id>/rename/", rename_folder, name="rename_folder"),
     path("folders/<int:folder_id>/delete/", delete_folder, name="delete_folder"),
-
     # Chunked upload endpoints
     path("upload/init/", upload_init, name="upload_init"),
     path("upload/chunk/", upload_chunk, name="upload_chunk"),

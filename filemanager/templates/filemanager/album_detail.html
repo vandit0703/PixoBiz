@@ -136,6 +136,26 @@
                 Event Date: {{ album.event_date }}
             </div>
         </div>
+        {% if folders %}
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
+
+            {% for sub in folders %}
+            <a href="{% url 'photo_album_folder' album.id sub.id %}"
+            class="media-card flex flex-col items-center justify-center">
+
+                <div class="media-placeholder">📁</div>
+
+                <div class="media-body text-center">
+                    <div class="media-name truncate">
+                        {{ sub.name }}
+                    </div>
+                </div>
+
+            </a>
+            {% endfor %}
+
+        </div>
+        {% endif %}
 
         <!-- Media Grid -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -159,14 +179,7 @@
 
             </div>
             {% empty %}
-            <div class="col-span-full">
-                <div class="empty-state">
-                    <i class="bx bx-image"></i>
-                    <p class="text-gray-500 font-medium">
-                        No files added to this album yet.
-                    </p>
-                </div>
-            </div>
+            
             {% endfor %}
 
         </div>

@@ -24,9 +24,11 @@
 </head>
 
 <body>
-    <div class="w-full max-w-md mx-auto bg-gradient-to-br from-purple-100 to-blue-100 rounded-2xl shadow-2xl p-8 border border-gray-200">
+    <div
+        class="w-full max-w-md mx-auto bg-gradient-to-br from-purple-100 to-blue-100 rounded-2xl shadow-2xl p-8 border border-gray-200">
         <div class="text-center mb-8">
-            <div class="mx-auto mb-4 flex items-center justify-center w-14 h-14 rounded-xl bg-gradient-to-br from-purple-600 to-blue-600 shadow-lg">
+            <div
+                class="mx-auto mb-4 flex items-center justify-center w-14 h-14 rounded-xl bg-gradient-to-br from-purple-600 to-blue-600 shadow-lg">
                 <iconify-icon icon="solar:user-id-linear" class="text-white text-3xl"></iconify-icon>
             </div>
             <h1 class="text-3xl font-extrabold text-gray-900 mb-1 tracking-tight">PixoBiz</h1>
@@ -44,34 +46,53 @@
             <div class="grid grid-cols-2 gap-4 mb-4">
                 <div>
                     <label for="first_name" class="block text-sm font-bold text-gray-800 mb-1">First Name</label>
-                    <input type="text" id="first_name" name="first_name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none bg-white text-gray-900 font-semibold" placeholder="First name" required>
+                    <input type="text" id="first_name" name="first_name"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none bg-white text-gray-900 font-semibold"
+                        placeholder="First name" required>
                 </div>
                 <div>
                     <label for="last_name" class="block text-sm font-bold text-gray-800 mb-1">Last Name</label>
-                    <input type="text" id="last_name" name="last_name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none bg-white text-gray-900 font-semibold" placeholder="Last name" required>
+                    <input type="text" id="last_name" name="last_name"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none bg-white text-gray-900 font-semibold"
+                        placeholder="Last name" required>
                 </div>
             </div>
             <div class="mb-4">
-                <label for="username" class="block text-sm font-bold text-gray-800 mb-1">Username</label>
-                <input type="text" id="username" name="username" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none bg-white text-gray-900 font-semibold" placeholder="Choose a username" required>
+                <label for="username" class="block text-sm font-bold text-gray-800 mb-1">
+                    Username
+                </label>
+
+                <input type="text" id="username" name="username"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none bg-white text-gray-900 font-semibold"
+                    placeholder="Choose a username" required oninput="this.value = this.value.replace(/\s/g, '')">
             </div>
             <div class="mb-4">
                 <label for="email" class="block text-sm font-bold text-gray-800 mb-1">Email</label>
-                <input type="email" id="email" name="email" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none bg-white text-gray-900 font-semibold" placeholder="Enter your email" required>
+                <input type="email" id="email" name="email"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none bg-white text-gray-900 font-semibold"
+                    placeholder="Enter your email" required>
             </div>
             <div class="mb-4">
                 <label for="phone" class="block text-sm font-bold text-gray-800 mb-1">Phone Number</label>
-                <input type="text" id="phone" name="phone" maxlength="10" pattern="[0-9]{10}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none bg-white text-gray-900 font-semibold" placeholder="10-digit mobile number" required>
+                <input type="text" id="phone" name="phone" maxlength="10" pattern="[0-9]{10}"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none bg-white text-gray-900 font-semibold"
+                    placeholder="10-digit mobile number" required>
             </div>
             <div class="mb-4">
                 <label for="password" class="block text-sm font-bold text-gray-800 mb-1">Password</label>
-                <input type="password" id="password" name="password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none bg-white text-gray-900 font-semibold" placeholder="At least 6 characters" required>
+                <input type="password" id="password" name="password"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none bg-white text-gray-900 font-semibold"
+                    placeholder="At least 6 characters" required>
             </div>
             <div class="mb-6">
-                <label for="password_confirm" class="block text-sm font-bold text-gray-800 mb-1">Confirm Password</label>
-                <input type="password" id="password_confirm" name="password_confirm" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none bg-white text-gray-900 font-semibold" placeholder="Confirm password" required>
+                <label for="password_confirm" class="block text-sm font-bold text-gray-800 mb-1">Confirm
+                    Password</label>
+                <input type="password" id="password_confirm" name="password_confirm"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none bg-white text-gray-900 font-semibold"
+                    placeholder="Confirm password" required>
             </div>
-            <button type="submit" class="w-full py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-extrabold rounded-lg shadow-lg hover:from-purple-700 hover:to-blue-700 transition-all text-lg flex items-center justify-center gap-2">
+            <button type="submit"
+                class="w-full py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-extrabold rounded-lg shadow-lg hover:from-purple-700 hover:to-blue-700 transition-all text-lg flex items-center justify-center gap-2">
                 <iconify-icon icon="solar:user-plus-bold" class="text-xl"></iconify-icon> Create Account
             </button>
         </form>
@@ -84,26 +105,26 @@
 
 </html>
 <script>
-// Validate phone and password match on signup
-function validateSignupForm() {
-    const phone = document.getElementById('phone').value.trim();
-    if (!/^[0-9]{10}$/.test(phone)) {
-        alert('Please enter a valid 10-digit phone number.');
-        document.getElementById('phone').focus();
-        return false;
+    // Validate phone and password match on signup
+    function validateSignupForm() {
+        const phone = document.getElementById('phone').value.trim();
+        if (!/^[0-9]{10}$/.test(phone)) {
+            alert('Please enter a valid 10-digit phone number.');
+            document.getElementById('phone').focus();
+            return false;
+        }
+        const password = document.getElementById('password').value;
+        const passwordConfirm = document.getElementById('password_confirm').value;
+        if (password !== passwordConfirm) {
+            alert('Passwords do not match.');
+            document.getElementById('password_confirm').focus();
+            return false;
+        }
+        if (password.length < 6) {
+            alert('Password must be at least 6 characters.');
+            document.getElementById('password').focus();
+            return false;
+        }
+        return true;
     }
-    const password = document.getElementById('password').value;
-    const passwordConfirm = document.getElementById('password_confirm').value;
-    if (password !== passwordConfirm) {
-        alert('Passwords do not match.');
-        document.getElementById('password_confirm').focus();
-        return false;
-    }
-    if (password.length < 6) {
-        alert('Password must be at least 6 characters.');
-        document.getElementById('password').focus();
-        return false;
-    }
-    return true;
-}
 </script>

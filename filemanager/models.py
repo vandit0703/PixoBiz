@@ -32,6 +32,7 @@ class UserFile(models.Model):
         null=True,
         blank=True
     )
+    preview = models.ImageField(upload_to="previews/", null=True, blank=True)
     original_name = models.CharField(max_length=255)
     file_size = models.BigIntegerField(default=0)
     numeric_key = models.BigIntegerField(null=True, blank=True, db_index=True)

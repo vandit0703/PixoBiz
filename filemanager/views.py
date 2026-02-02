@@ -47,8 +47,11 @@ ALLOWED_EXTENSIONS = [
     ".mp4", ".mov", ".avi", ".mkv", ".mts", ".m2ts",
     ".psd", ".xmp", ".zip"
 ]
-IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"]
-
+IMAGE_EXTENSIONS = [
+    ".jpg", ".jpeg", ".png", ".webp",
+    ".tif", ".tiff",
+    ".cr2", ".cr3", ".nef", ".arw", ".dng", ".raf", ".orf", ".rw2", ".pef"
+]
 
 # Chunking threshold: files larger than this MUST be uploaded via chunked upload (10 MB)
 
@@ -56,6 +59,22 @@ CHUNK_SIZE = 100 * 1024 * 1024
 BASE_DIR = settings.BASE_DIR
 CHUNK_ROOT = os.path.join(BASE_DIR, "runtime_chunks")
 os.makedirs(CHUNK_ROOT, exist_ok=True)
+
+# =========================
+# Folder recursive helper
+# =========================
+def get_all_subfolders(folder):
+    result = []
+    stack = [folder]
+
+    while stack:
+        f = stack.pop()
+        children = list(Folder.objects.filter(parent=f))
+        result.extend(children)
+        stack.extend(children)
+
+    return result
+ 
 # ============================
 # FILE MANAGER (GRID / LIST)
 # ============================
@@ -323,7 +342,8 @@ def public_album_download(request, share_token):
         if not request.session.get(session_key):
             return HttpResponseForbidden("PIN verification required")
 
-    files = UserFile.objects.filter(folder=album.folder).order_by("numeric_key", "original_name")
+    all_folders = [album.folder] + get_all_subfolders(album.folder)
+    files = UserFile.objects.filter(folder__in=all_folders).order_by("numeric_key", "original_name")
 
     response = HttpResponse(content_type="application/zip")
     response["Content-Disposition"] = (
@@ -356,10 +376,12 @@ def public_album_file_download(request, share_token, file_id):
         if not request.session.get(session_key):
             return HttpResponseForbidden("PIN verification required")
 
+    all_folders = [album.folder] + get_all_subfolders(album.folder)
+
     file = get_object_or_404(
         UserFile,
         id=file_id,
-        folder=album.folder
+        folder__in=all_folders
     )
 
     return FileResponse(
@@ -530,9 +552,13 @@ def upload_chunk(request):
 # ============================
 # PUBLIC SHARED FOLDER VIEW
 # ============================
-def shared_folder_view(request, token):
+def shared_folder_view(request, token, folder_id=None):
     share = get_object_or_404(FolderShare, token=token)
-    folder = share.folder
+
+    if folder_id:
+        folder = get_object_or_404(Folder, id=folder_id)
+    else:
+        folder = share.folder
 
     folders = Folder.objects.filter(parent=folder).order_by("name")
     files = UserFile.objects.filter(folder=folder).order_by("numeric_key", "original_name")
@@ -555,11 +581,14 @@ def shared_file_download(request, token, file_id):
     if not share.allow_download:
         return HttpResponseForbidden("Download not allowed")
 
+    all_folders = [share.folder] + get_all_subfolders(share.folder)
+
     file = get_object_or_404(
         UserFile,
         id=file_id,
-        folder=share.folder
+        folder__in=all_folders
     )
+
 
     return FileResponse(
         file.file.open("rb"),
@@ -637,10 +666,13 @@ def public_album_detail(request, token):
                 "filemanager/album_pin.html",  # 👈 THIS TEMPLATE
                 {"album": album}
             )
+        
+    folder = album.folder
 
+    all_folders = [album.folder] + get_all_subfolders(album.folder)
 
     files = UserFile.objects.filter(
-        folder=album.folder
+        folder__in=all_folders
     ).order_by("numeric_key", "original_name")
 
     return render(
@@ -703,17 +735,31 @@ def toggle_album_download(request, album_id):
 
 
 @login_required
-def photo_album_detail(request, album_id):
+def photo_album_detail(request, album_id, folder_id=None):
     album = get_object_or_404(
         PhotoAlbum,
         id=album_id,
         user=request.user
     )
 
-    folder = album.folder
+    # which folder to show
+    if folder_id:
+        folder = get_object_or_404(
+            Folder,
+            id=folder_id,
+            user=request.user
+        )
+    else:
+        folder = album.folder
+
+    subfolders = Folder.objects.filter(
+        parent=folder,
+        user=request.user
+    ).order_by("name")
 
     files = UserFile.objects.filter(
-        folder=folder
+        folder=folder,
+        user=request.user
     ).order_by("numeric_key", "original_name")
 
     return render(
@@ -721,9 +767,12 @@ def photo_album_detail(request, album_id):
         "filemanager/album_detail.html",
         {
             "album": album,
+            "folder": folder,
+            "folders": subfolders,
             "files": files,
         }
     )
+
 
 @login_required
 def photo_album_list(request):
@@ -874,10 +923,10 @@ def search_selfie(request):
 
     # 4️⃣ Get face embeddings ONLY from this album
     # Get files in this album first
-    files_in_album = UserFile.objects.filter(folder=album.folder)
-    # Now get face embeddings linked to those files
-    faces = FaceEmbedding.objects.filter(file__in=files_in_album)
+    all_folders = [album.folder] + get_all_subfolders(album.folder)
 
+    files_in_album = UserFile.objects.filter(folder__in=all_folders)
+    faces = FaceEmbedding.objects.filter(file__in=files_in_album)
 
     if not faces.exists():
         return JsonResponse({"images": []})
@@ -949,7 +998,9 @@ def download_search_matches(request):
     except PhotoAlbum.DoesNotExist:
         return JsonResponse({"error": "Invalid album"}, status=404)
 
-    files = UserFile.objects.filter(id__in=file_ids, folder=album.folder)
+    all_folders = [album.folder] + get_all_subfolders(album.folder)
+    files = UserFile.objects.filter(id__in=file_ids, folder__in=all_folders)
+
     if not files.exists():
         return JsonResponse({"error": "No files found"}, status=404)
 
