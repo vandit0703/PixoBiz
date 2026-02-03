@@ -543,10 +543,6 @@
                     ⋮
                 </button>
 
-
-                <!-- MENU -->
-
-
                 <!-- THUMBNAIL -->
                 <div onclick="openLightbox({{ forloop.counter0 }})" class="cursor-pointer text-center">
 
@@ -605,7 +601,13 @@
                         {{ f.original_name }}
                     </td>
 
-                
+                    <td class="px-4 py-3">
+                        {% if f.file %}
+                            {{ f.file.size|filesizeformat }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
 
                     <td class="px-4 py-3 capitalize">
                         {{ f.file_type }}

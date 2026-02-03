@@ -174,6 +174,11 @@ def upload_files(request):
         if file_type == "image":
             generate_thumbnail.delay(user_file.id)
             extract_face_embeddings.delay(user_file.id)
+
+    return JsonResponse({
+        "status": "success",
+        "uploaded": uploaded_count
+    })
 # ============================
 # FILE OPEN VIEW (for all allowed types)
 # ============================
