@@ -128,8 +128,7 @@
 
         <div class="form-group">
             <label>Album PIN (4 digits)</label>
-            <input type="text" name="pin" maxlength="4" pattern="[0-9]{4}" placeholder="Leave blank to keep existing"
-                value="" />
+            <input type="text" name="pin" maxlength="4" pattern="[0-9]{4}" placeholder="Leave blank to keep existing" value="" />
             {% if album.pin %}
             <div class="text-xs text-gray-500 mt-2">Current PIN is set. Leave blank to keep.</div>
             {% endif %}

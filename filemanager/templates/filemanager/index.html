@@ -182,6 +182,11 @@
         justify-content: center;
     }
 
+    .file-check:checked,
+    .folder-check:checked {
+        opacity: 1 !important;
+    }
+
     .result-item:hover {
         transform: translateY(-8px);
         box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
@@ -423,12 +428,14 @@
             font-size: 14px;
         }
     }
+
     #uploadProgress {
         position: fixed;
         bottom: 24px;
         right: 24px;
         z-index: 9999;
     }
+
     /* List view table scroll */
     #listView {
         overflow-x: auto;
@@ -460,14 +467,40 @@
 
         <!-- ACTIONS -->
         <div class="flex items-center gap-3">
+            <div id="selectionActions" class="flex gap-2 hidden transition">
 
+                <button id="selectAllBtn" onclick="toggleSelectAllFiles()" class="px-3 py-2 border rounded">
+                    ✅ Select All
+                </button>
+
+
+                <button onclick="copySelected()" class="px-3 py-2 border rounded">
+                    📄 Copy
+                </button>
+
+                <button onclick="cutSelected()" class="px-3 py-2 border rounded">
+                    ✂ Cut
+                </button>
+
+
+
+                <button onclick="deleteSelected()" class="px-3 py-2 bg-red-600 text-white rounded">
+                    🗑 Delete Selected
+                </button>
+
+            </div>
+            <!-- clipboard actions -->
+            <div id="clipboardActions" class="hidden flex gap-2">
+                <button onclick="pasteSelected()" class="px-3 py-2 bg-green-600 text-white rounded">
+                    📥 Paste
+                </button>
+            </div>
             <!-- UPLOAD DROPDOWN -->
             <div class="relative">
                 <button onclick="toggleUploadMenu(event)"
                     class="bg-blue-600 text-white px-4 py-2 rounded flex items-center gap-2">
                     Upload ▾
                 </button>
-
                 <div id="uploadMenu" class="hidden absolute right-0 mt-2 bg-white border rounded shadow w-40 z-50">
 
                     <button onclick="triggerFileUpload()" class="block w-full text-left px-4 py-2 hover:bg-gray-100">
@@ -496,7 +529,8 @@
             </form>
 
             <!-- NEW FOLDER -->
-            <button onclick="createNewFolder()" class="ml-3 px-3 py-2 bg-white border rounded text-gray-700 hover:bg-blue-50">
+            <button onclick="createNewFolder()"
+                class="ml-3 px-3 py-2 bg-white border rounded text-gray-700 hover:bg-blue-50">
                 📁 New Folder
             </button>
 
@@ -512,7 +546,11 @@
     {% if folders %}
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         {% for folder in folders %}
-        <div class="relative bg-white border rounded p-4 text-center hover:bg-blue-50">
+        <div class="relative bg-white border rounded p-4 text-center hover:bg-blue-50 group">
+            <input type="checkbox" class="folder-check absolute top-2 left-2 z-20
+       opacity-0 group-hover:opacity-100
+       transition" value="{{ folder.id }}" onclick="event.stopPropagation()">
+
 
             <!-- THREE DOT BUTTON -->
             <button type="button" class="absolute top-2 right-2 z-20 bg-white rounded-full shadow px-2"
@@ -536,7 +574,9 @@
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
             {% for f in files %}
             <div class="relative bg-white border rounded p-2 hover:shadow group">
-
+                <input type="checkbox" class="file-check absolute top-2 left-2 z-10
+              opacity-0 group-hover:opacity-100
+              transition" value="{{ f.id }}" onclick="event.stopPropagation()">
                 <!-- MENU BUTTON -->
                 <button onclick="openMenu(event, {{ f.id }}, '{{ f.original_name }}', '{{ f.file.url }}')"
                     class="absolute top-2 right-2 bg-white rounded-full shadow px-2 z-10">
@@ -546,9 +586,15 @@
                 <!-- THUMBNAIL -->
                 <div onclick="openLightbox({{ forloop.counter0 }})" class="cursor-pointer text-center">
 
-                    {% if f.file_type == "image" and f.thumbnail %}
-                    <img src="{{ f.thumbnail.url }}" class="w-full h-40 object-cover rounded">
-
+                    {% if f.file_type == "image"%}
+                    {% if f.thumbnail %}
+                        <img src="{{ f.thumbnail.url }}"
+                            class="w-full h-40 object-cover rounded">
+                    {% else %}
+                        <div class="w-full h-40 flex items-center justify-center bg-gray-100 rounded text-3xl">
+                            🖼
+                        </div>
+                    {% endif %}
                     {% elif f.file_type == "video" %}
                     <div class="text-5xl py-10">🎬</div>
 
@@ -582,6 +628,9 @@
                     <th class="text-left px-4 py-3">Name</th>
                     <th class="text-left px-4 py-3">Size</th>
                     <th class="text-left px-4 py-3">Type</th>
+                    <th class="px-4 py-3">
+                        <input type="checkbox" onclick="toggleSelectAll(this)">
+                    </th>
                     <th class="text-right px-4 py-3">Options</th>
                 </tr>
             </thead>
@@ -600,12 +649,14 @@
                         {% endif %}
                         {{ f.original_name }}
                     </td>
-
+                    <td class="px-4 py-3">
+                        <input type="checkbox" class="file-check" value="{{ f.id }}">
+                    </td>
                     <td class="px-4 py-3">
                         {% if f.file %}
-                            {{ f.file.size|filesizeformat }}
+                        {{ f.file.size|filesizeformat }}
                         {% else %}
-                            —
+                        —
                         {% endif %}
                     </td>
 
@@ -654,24 +705,21 @@
 
 </div>
 <div id="uploadProgress" style="display:none"
-     class="fixed bottom-6 right-6 bg-white border rounded-xl shadow-xl p-4 w-80 hidden z-50">
+    class="fixed bottom-6 right-6 bg-white border rounded-xl shadow-xl p-4 w-80 hidden z-50">
 
     <p class="text-sm font-semibold mb-1">Uploading files…</p>
     <p id="fileCountStatus" class="text-xs text-gray-600 mb-1">
         Files: 0 / 0
     </p>
 
-    <p id="currentFile"
-       class="text-xs text-gray-600 truncate mb-2">
+    <p id="currentFile" class="text-xs text-gray-600 truncate mb-2">
         Preparing…
     </p>
 
     <div class="w-full bg-gray-200 rounded h-3 overflow-hidden">
-        <div id="progressBar"
-             class="bg-blue-600 h-3 transition-all duration-300"
-             style="width:0%">
+        <div id="progressBar" class="bg-blue-600 h-3 transition-all duration-300" style="width:0%">
         </div>
-    </div>  
+    </div>
     <!-- <div class="flex justify-end gap-2 mt-3">
         <button id="pauseBtn"
             class="px-3 py-1 border rounded text-sm"
@@ -773,16 +821,15 @@
     <div class="bg-white rounded-lg w-full max-w-md p-6 relative">
         <h3 class="text-lg font-semibold mb-4">Create Photo Album</h3>
 
-        <input id="albumName" type="text" placeholder="Album Name" class="w-full border rounded px-3 py-2 mb-3" required>
+        <input id="albumName" type="text" placeholder="Album Name" class="w-full border rounded px-3 py-2 mb-3"
+            required>
 
         <input id="eventDate" type="date" class="w-full border rounded px-3 py-2 mb-3" required>
         <label class="block text-sm font-medium mb-1">Album Cover</label>
-        <input id="albumCover" type="file" accept="image/*"
-            class="w-full border rounded px-3 py-2 mb-3"
+        <input id="albumCover" type="file" accept="image/*" class="w-full border rounded px-3 py-2 mb-3"
             onchange="previewAlbumCover(event)">
 
-        <img id="coverPreview"
-            class="hidden w-full h-40 object-cover rounded mb-3 border">
+        <img id="coverPreview" class="hidden w-full h-40 object-cover rounded mb-3 border">
 
         <label class="flex items-center gap-2 mb-2 text-sm">
             <input type="checkbox" id="allowDownload" checked>
@@ -790,9 +837,10 @@
         </label>
 
         <label class="block text-sm font-medium mb-1">Set PIN (4 digits)</label>
-        <input id="albumPin" type="text" maxlength="4" inputmode="numeric" pattern="[0-9]{4}"
-            placeholder="e.g., 1234" class="w-full border rounded px-3 py-2 mb-3" required>
-        <p class="text-xs text-gray-500 mb-3">A 4-digit PIN protects the album. Users will need this to view full album.</p>
+        <input id="albumPin" type="text" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" placeholder="e.g., 1234"
+            class="w-full border rounded px-3 py-2 mb-3" required>
+        <p class="text-xs text-gray-500 mb-3">A 4-digit PIN protects the album. Users will need this to view full album.
+        </p>
 
         <div class="flex justify-end gap-3">
             <button onclick="closePhotoAlbumModal()" class="px-4 py-2 border rounded">
@@ -825,20 +873,34 @@
         </div>
     </div>
 </div>
+<div id="pasteProgress" class="hidden fixed inset-0 bg-black/40 z-[9999] flex items-center justify-center">
+
+    <div class="bg-white rounded-xl p-6 w-80 shadow-xl text-center">
+
+        <div class="animate-spin w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4">
+        </div>
+
+        <p class="font-semibold text-lg">Processing…</p>
+        <p class="text-sm text-gray-600 mt-1">
+            Copy / Move in progress
+        </p>
+
+    </div>
+</div>
 
 <script>
-function previewAlbumCover(event) {
-    const img = document.getElementById('coverPreview');
-    const file = event.target.files[0];
+    function previewAlbumCover(event) {
+        const img = document.getElementById('coverPreview');
+        const file = event.target.files[0];
 
-    if (!file) {
-        img.classList.add('hidden');
-        return;
+        if (!file) {
+            img.classList.add('hidden');
+            return;
+        }
+
+        img.src = URL.createObjectURL(file);
+        img.classList.remove('hidden');
     }
-
-    img.src = URL.createObjectURL(file);
-    img.classList.remove('hidden');
-}
 </script>
 
 <script>
@@ -967,58 +1029,58 @@ function previewAlbumCover(event) {
         document.getElementById("photoAlbumModal").classList.add("hidden");
     }
     function submitPhotoAlbum(e) {
-    e.preventDefault();
-    e.stopPropagation();
+        e.preventDefault();
+        e.stopPropagation();
 
-    const data = new FormData();
+        const data = new FormData();
 
-    const albumNameVal = document.getElementById("albumName").value.trim();
-    const eventDateVal = document.getElementById("eventDate").value;
+        const albumNameVal = document.getElementById("albumName").value.trim();
+        const eventDateVal = document.getElementById("eventDate").value;
 
-    if (!albumNameVal) { alert('Album name is required'); return; }
-    if (!eventDateVal) { alert('Event date is required'); return; }
+        if (!albumNameVal) { alert('Album name is required'); return; }
+        if (!eventDateVal) { alert('Event date is required'); return; }
 
-    data.append("album_name", albumNameVal);
-    data.append("event_date", eventDateVal);
-    data.append("allow_download", document.getElementById("allowDownload").checked);
+        data.append("album_name", albumNameVal);
+        data.append("event_date", eventDateVal);
+        data.append("allow_download", document.getElementById("allowDownload").checked);
 
-    // ✅ REQUIRE PIN
-    const pinVal = document.getElementById("albumPin").value.trim();
-    if (!pinVal || !/^[0-9]{4}$/.test(pinVal)) {
-        alert('Please enter a valid 4-digit PIN');
-        return;
-    }
-    data.append("pin", pinVal);
-
-    // ✅ ADD COVER IMAGE (server expects 'cover_image')
-    const coverInput = document.getElementById("albumCover");
-    if (coverInput.files.length > 0) {
-        data.append("cover_image", coverInput.files[0]);
-    }
-
-    fetch(`/folders/${currentFolderId}/share/photo-album/`, {
-        method: "POST",
-        headers: {
-            "X-CSRFToken": getCSRFToken()
-        },
-        body: data
-    })
-    .then(res => res.json())
-    .then(res => {
-        console.log("Album response:", res);
-        if (res.success) {
-            alert("Photo Album created ✅");
-            closePhotoAlbumModal();
-            location.reload();
-        } else {
-            alert(res.error || "Failed");
+        // ✅ REQUIRE PIN
+        const pinVal = document.getElementById("albumPin").value.trim();
+        if (!pinVal || !/^[0-9]{4}$/.test(pinVal)) {
+            alert('Please enter a valid 4-digit PIN');
+            return;
         }
-    })
-    .catch(err => {
-        console.error(err);
-        alert("Network error");
-    });
-}
+        data.append("pin", pinVal);
+
+        // ✅ ADD COVER IMAGE (server expects 'cover_image')
+        const coverInput = document.getElementById("albumCover");
+        if (coverInput.files.length > 0) {
+            data.append("cover_image", coverInput.files[0]);
+        }
+
+        fetch(`/folders/${currentFolderId}/share/photo-album/`, {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": getCSRFToken()
+            },
+            body: data
+        })
+            .then(res => res.json())
+            .then(res => {
+                console.log("Album response:", res);
+                if (res.success) {
+                    alert("Photo Album created ✅");
+                    closePhotoAlbumModal();
+                    location.reload();
+                } else {
+                    alert(res.error || "Failed");
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert("Network error");
+            });
+    }
 
 </script>
 
@@ -1039,7 +1101,210 @@ function previewAlbumCover(event) {
         document.getElementById("gridBtn").classList.remove("bg-blue-600", "text-white");
     }
 </script>
+<script>
+    let clipboard = {
+        mode: null,   // "copy" or "cut"
+        files: []
+    };
 
+    function getSelection() {
+        return {
+            files: [...document.querySelectorAll(".file-check:checked")]
+                .map(cb => cb.value),
+
+            folders: [...document.querySelectorAll(".folder-check:checked")]
+                .map(cb => cb.value)
+        };
+    }
+
+    function toggleSelectAllFiles() {
+        const boxes = document.querySelectorAll(".file-check, .folder-check");
+        const btn = document.getElementById("selectAllBtn");
+
+        const allChecked = [...boxes].every(cb => cb.checked);
+
+        if (allChecked) {
+            // deselect all
+            boxes.forEach(cb => cb.checked = false);
+            btn.innerText = "✅ Select All";
+        } else {
+            // select all
+            boxes.forEach(cb => cb.checked = true);
+            btn.innerText = "❌ Deselect All";
+        }
+
+        updateSelectionActions();
+    }
+
+
+    function toggleSelectAll(master) {
+        document.querySelectorAll(".file-check")
+            .forEach(cb => cb.checked = master.checked);
+
+        updateSelectionActions();
+    }
+
+    function copySelected() {
+        const sel = getSelection();
+
+        if (!sel.files.length && !sel.folders.length) {
+            alert("Select files or folders");
+            return;
+        }
+
+        localStorage.setItem("fm_clipboard", JSON.stringify({
+            mode: "copy",
+            files: sel.files,
+            folders: sel.folders
+        }));
+
+        alert("Copied selection");
+        updateClipboardActions();
+    }
+
+    function cutSelected() {
+        const sel = getSelection();
+
+        if (!sel.files.length && !sel.folders.length) {
+            alert("Select files or folders");
+            return;
+        }
+
+        localStorage.setItem("fm_clipboard", JSON.stringify({
+            mode: "cut",
+            files: sel.files,
+            folders: sel.folders
+        }));
+
+        alert("Cut selection");
+        updateClipboardActions();
+    }
+
+
+    function saveClipboard(mode, files) {
+        localStorage.setItem("fm_clipboard", JSON.stringify({
+            mode: mode,
+            files: files
+        }));
+    }
+
+    function loadClipboard() {
+        const data = localStorage.getItem("fm_clipboard");
+        if (!data) return null;
+        try {
+            return JSON.parse(data);
+        } catch {
+            return null;
+        }
+    }
+
+    function clearClipboard() {
+        localStorage.removeItem("fm_clipboard");
+    }
+    async function deleteSelected() {
+
+        const sel = getSelection();
+
+        if (!sel.files.length) {
+            alert("Select files first");
+            return;
+        }
+
+        if (!confirm(`Delete ${sel.files.length} files? This cannot be undone.`)) {
+            return;
+        }
+        startOpBox(
+                "Deleting files…",
+                `Items: ${sel.files.length}`,
+                "Removing data…"
+        );
+        const res = await fetch("/files/bulk-delete/", {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": getCSRFToken(),
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ file_ids: sel.files })
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.error || "Delete failed");
+        }
+    }
+    async function pasteSelected() {
+
+        const clipboard = loadClipboard();
+
+        if (!clipboard || !clipboard.mode ||
+            (!clipboard.files?.length && !clipboard.folders?.length)) {
+            alert("Nothing copied or cut");
+            return;
+        }
+        startOpBox(
+            clipboard.mode === "cut" ? "Moving files…" : "Copying files…",
+            `Items: ${(clipboard.files?.length || 0) + (clipboard.folders?.length || 0)}`,
+            "Processing…"
+        );
+        // ✅ SHOW PROGRESS
+        document.getElementById("pasteProgress").classList.remove("hidden");
+
+        const fd = new FormData();
+        fd.append("mode", clipboard.mode);
+
+        (clipboard.files || []).forEach(id =>
+            fd.append("file_ids", id)
+        );
+
+        (clipboard.folders || []).forEach(id =>
+            fd.append("folder_ids", id)
+        );
+
+        {% if current_folder %}
+        fd.append("target_folder", "{{ current_folder.id }}");
+        {% endif %}
+
+        const res = await fetch("/files/paste/", {
+            method: "POST",
+            headers: { "X-CSRFToken": getCSRFToken() },
+            body: fd
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+            if (clipboard.mode === "cut") clearClipboard(); updateClipboardActions();
+            location.reload();
+        } else {
+            document.getElementById("pasteProgress").classList.add("hidden");
+            alert(data.error || "Paste failed");
+        }
+    }
+
+</script>
+<script>
+    function startOpBox(title, line1, line2) {
+        const box = document.getElementById("uploadProgress");
+
+        box.style.display = "block";
+        box.classList.remove("hidden");
+
+        box.querySelector(".font-semibold").innerText = title;
+
+        document.getElementById("fileCountStatus").innerText = line1 || "";
+        document.getElementById("currentFile").innerText = line2 || "Processing…";
+
+        document.getElementById("progressBar").style.width = "100%";
+    }
+
+    function stopOpBox() {
+        document.getElementById("uploadProgress").classList.add("hidden");
+    }
+
+</script>
 <script>
     let pauseUpload = false;
     let uploadInProgress = false;
@@ -1073,7 +1338,7 @@ function previewAlbumCover(event) {
 
         document.getElementById("fileCountStatus").innerText =
             `Files: 0 / ${totalFiles}`;
-        const CHUNK_SIZE = 100 * 1024 * 1024;
+        const CHUNK_SIZE = 20 * 1024 * 1024;
 
         {% if current_folder %}
         const parent_id = "{{ current_folder.id }}";
@@ -1200,7 +1465,46 @@ function previewAlbumCover(event) {
         setTimeout(() => location.reload(), 900);
     }
 </script>
+<script>
+    function updateSelectionActions() {
+        const boxes = document.querySelectorAll(".file-check, .folder-check");
+        const checked = document.querySelectorAll(".file-check:checked, .folder-check:checked");
 
+        const bar = document.getElementById("selectionActions");
+        const btn = document.getElementById("selectAllBtn");
+
+        if (checked.length > 0) {
+            bar.classList.remove("hidden");
+        } else {
+            bar.classList.add("hidden");
+        }
+
+        if (boxes.length && checked.length === boxes.length) {
+            btn.innerText = "❌ Deselect All";
+        } else {
+            btn.innerText = "✅ Select All";
+        }
+    }
+
+    function updateClipboardActions() {
+        const data = localStorage.getItem("fm_clipboard");
+        const bar = document.getElementById("clipboardActions");
+
+        if (data) {
+            bar.classList.remove("hidden");
+        } else {
+            bar.classList.add("hidden");
+        }
+    }
+
+    /* watch all checkboxes */
+    document.addEventListener("change", function (e) {
+        if (e.target.classList.contains("file-check") ||
+            e.target.classList.contains("folder-check")) {
+            updateSelectionActions();
+        }
+    });
+</script>
 <script>
     function getCSRFToken() {
         return document.querySelector('[name=csrfmiddlewaretoken]').value;
@@ -1365,7 +1669,11 @@ function previewAlbumCover(event) {
         event.stopPropagation();
 
         if (!confirm("Are you sure you want to delete this file?")) return;
-
+        startOpBox(
+            "Deleting file…",
+            "",
+            "Removing item…"
+        );
         fetch(`/files/delete/${fileId}/`, {
             method: "POST",
             headers: {
@@ -1433,13 +1741,13 @@ function previewAlbumCover(event) {
         const file = files[currentIndex];
         const ext = file.url.split('.').pop().toLowerCase();
 
-        const RAW = ["cr2","cr3","nef","arw","dng","raf","orf","rw2","pef"];
+        const RAW = ["cr2", "cr3", "nef", "arw", "dng", "raf", "orf", "rw2", "pef"];
 
         // IMAGE + RAW
-        if (["jpg","jpeg","png","gif","webp"].includes(ext) || RAW.includes(ext)) {
+        if (["jpg", "jpeg", "png", "gif", "webp"].includes(ext) || RAW.includes(ext)) {
             const img = document.getElementById("preview-img");
 
-            if (["jpg","jpeg","png","gif","webp"].includes(ext)) {
+            if (["jpg", "jpeg", "png", "gif", "webp"].includes(ext)) {
                 img.src = file.url;
             }
             else if (RAW.includes(ext)) {
@@ -1502,4 +1810,11 @@ function previewAlbumCover(event) {
     });
 
 </script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        updateClipboardActions();
+        updateSelectionActions();
+    });
+</script>
+
 {% endblock %}

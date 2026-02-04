@@ -4,6 +4,7 @@ from django.urls import path
 from faceapp import views
 from .views import (
     album_face_search_view,
+    bulk_delete_files,
     delete_file,
     my_applications,
     photo_album_set_pin,
@@ -13,6 +14,7 @@ from .views import (
     share_folder,
     public_album_download,
     shared_file_download,
+    shared_folder_download,
     shared_folder_view,
     toggle_album_download,
     toggle_album_download,
@@ -55,6 +57,8 @@ from .views import (
     photo_album_verify_pin,
     upload_init,
     upload_chunk,
+    paste_files,
+    apply_album_watermark,
 )
 
 urlpatterns = [
@@ -139,7 +143,7 @@ urlpatterns = [
         share_folder,
         name="share_folder"
     ),
-
+    path("files/paste/",paste_files, name="paste_files"),
     # PUBLIC VIEW
     path(
         "shared/folder/<uuid:token>/",
@@ -152,6 +156,17 @@ urlpatterns = [
         "shared/file/<uuid:token>/<int:file_id>/download/",
         shared_file_download,
         name="shared_file_download"
+    ),
+    path("files/bulk-delete/", bulk_delete_files, name="bulk_delete_files"),
+    path(
+        "shared/folder/<uuid:token>/download/",
+        shared_folder_download,
+        name="shared_folder_download"
+    ),
+    path(
+        "photo-albums/<int:album_id>/apply-watermark/",
+        apply_album_watermark,
+        name="apply_album_watermark"
     ),
     path("folders/create/", create_folder, name="create_folder"),
     path("folders/<int:folder_id>/rename/", rename_folder, name="rename_folder"),

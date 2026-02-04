@@ -115,6 +115,7 @@ class FaceEmbedding(models.Model):
 
     def __str__(self):
         return f"Face - File ID {self.file.id}"
+    
 class PhotoAlbum(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     folder = models.OneToOneField(
@@ -128,7 +129,9 @@ class PhotoAlbum(models.Model):
 
     allow_download = models.BooleanField(default=True)
     watermark = models.BooleanField(default=False)
-
+    watermark_applied = models.BooleanField(default=False)
+    watermark_logo = models.ImageField(upload_to="watermarks/", null=True, blank=True)
+    watermark_position = models.CharField(max_length=5, null=True, blank=True)
     pin = models.CharField(max_length=4, blank=True, null=True)
 
     cover_image = models.ImageField(
@@ -143,7 +146,14 @@ class PhotoAlbum(models.Model):
         null=True,
         blank=True
     )
-
+    download_mode = models.CharField(
+        max_length=20,
+        choices=[
+            ("original", "Original"),
+            ("watermark", "Watermark")
+        ],
+        default="original"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

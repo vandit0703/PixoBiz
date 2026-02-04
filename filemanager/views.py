@@ -21,6 +21,7 @@ import shutil
 from datetime import datetime, timedelta
 from urllib.parse import quote as urlquote
 import requests
+from PIL import Image
 from .tasks import generate_thumbnail, extract_face_embeddings
 from django.db.models import Q
 from django.views.decorators.http import require_POST
@@ -55,7 +56,7 @@ IMAGE_EXTENSIONS = [
 
 # Chunking threshold: files larger than this MUST be uploaded via chunked upload (10 MB)
 
-CHUNK_SIZE = 100 * 1024 * 1024
+CHUNK_SIZE = 20 * 1024 * 1024
 BASE_DIR = settings.BASE_DIR
 CHUNK_ROOT = os.path.join(BASE_DIR, "runtime_chunks")
 os.makedirs(CHUNK_ROOT, exist_ok=True)
@@ -242,9 +243,24 @@ def delete_file(request, file_id):
             user=request.user
         )
 
-        # 🔴 delete physical file safely (ignore errors)
+        # 🔴 delete main file
         try:
-            user_file.file.delete(save=False)
+            if user_file.file:
+                user_file.file.delete(save=False)
+        except Exception:
+            pass
+
+        # 🔴 delete thumbnail
+        try:
+            if getattr(user_file, "thumbnail", None):
+                user_file.thumbnail.delete(save=False)
+        except Exception:
+            pass
+
+        # 🔴 delete preview (RAW preview / generated image)
+        try:
+            if getattr(user_file, "preview", None):
+                user_file.preview.delete(save=False)
         except Exception:
             pass
 
@@ -255,7 +271,101 @@ def delete_file(request, file_id):
 
     except UserFile.DoesNotExist:
         return JsonResponse({"error": "File not found"}, status=404)
-    
+
+@login_required
+@require_POST
+def apply_album_watermark(request, album_id):
+
+    album = get_object_or_404(
+        PhotoAlbum,
+        id=album_id,
+        user=request.user
+    )
+
+    # ✅ prevent re-apply
+    if album.watermark_applied:
+        return JsonResponse({
+            "success": False,
+            "error": "Watermark already applied"
+        }, status=400)
+
+    logo_file = request.FILES.get("logo")
+    position = request.POST.get("position")
+
+    if not logo_file or not position:
+        return JsonResponse({
+            "success": False,
+            "error": "Logo and position required"
+        }, status=400)
+
+    # ✅ just save logo — DO NOT edit images
+    album.watermark_logo = logo_file
+    album.watermark_position = position
+    album.watermark_applied = True
+    album.watermark = True   # keep your existing flag if used
+    album.save()
+
+    # count images for UI message only
+    all_folders = [album.folder] + get_all_subfolders(album.folder)
+    count = UserFile.objects.filter(
+        folder__in=all_folders,
+        file_type="image"
+    ).count()
+
+    return JsonResponse({
+        "success": True,
+        "processed": count
+    })
+
+@login_required
+@require_POST
+def remove_album_watermark(request, album_id):
+
+    album = get_object_or_404(PhotoAlbum, id=album_id, user=request.user)
+
+    album.watermark_applied = False
+    album.watermark_logo = None
+    album.watermark_position = None
+    album.watermark = False
+    album.save()
+
+    return JsonResponse({"success": True})
+
+
+def stream_watermarked_image(file_path, logo_path, position="br"):
+
+    base = Image.open(file_path).convert("RGBA")
+    wm = Image.open(logo_path).convert("RGBA")
+
+    # resize watermark
+    bw, bh = base.size
+    target_w = int(bw * 0.18)
+    ratio = target_w / wm.width
+    wm = wm.resize((target_w, int(wm.height * ratio)))
+
+    # opacity
+    alpha = wm.split()[3]
+    alpha = alpha.point(lambda p: p * 0.55)
+    wm.putalpha(alpha)
+
+    # position map
+    ww, wh = wm.size
+    pad = 30
+    posmap = {
+        "br": (bw-ww-pad, bh-wh-pad),
+        "bl": (pad, bh-wh-pad),
+        "tr": (bw-ww-pad, pad),
+        "tl": (pad, pad),
+        "mc": ((bw-ww)//2, (bh-wh)//2),
+    }
+
+    base.paste(wm, posmap.get(position, posmap["br"]), wm)
+
+    temp = tempfile.NamedTemporaryFile(suffix=".jpg", delete=False)
+    base.convert("RGB").save(temp.name, quality=95)
+
+    return temp.name
+
 @login_required
 def rename_folder(request, folder_id):
     if request.method != "POST":
@@ -292,14 +402,34 @@ def delete_folder(request, folder_id):
             user=request.user
         )
 
-        # delete files inside folder
+        # 🔴 delete files inside folder
         for f in folder.files.all():
+
+            # main file
             try:
-                f.file.delete(save=False)
+                if f.file:
+                    f.file.delete(save=False)
             except Exception:
                 pass
+
+            # thumbnail
+            try:
+                if getattr(f, "thumbnail", None):
+                    f.thumbnail.delete(save=False)
+            except Exception:
+                pass
+
+            # preview
+            try:
+                if getattr(f, "preview", None):
+                    f.preview.delete(save=False)
+            except Exception:
+                pass
+
+            # DB record
             f.delete()
 
+        # 🔴 delete folder record
         folder.delete()
 
         return JsonResponse({"success": True})
@@ -333,6 +463,21 @@ def share_folder(request, folder_id):
             f"/shared/folder/{share.token}/"
         )
     })
+@login_required
+@require_POST
+def set_download_mode(request, album_id):
+
+    album = get_object_or_404(PhotoAlbum, id=album_id, user=request.user)
+
+    mode = request.POST.get("mode")
+
+    if mode not in ["original", "watermark"]:
+        return JsonResponse({"success": False}, status=400)
+
+    album.download_mode = mode
+    album.save()
+
+    return JsonResponse({"success": True})
 
 def public_album_download(request, share_token):
     album = get_object_or_404(PhotoAlbum, public_token=share_token)
@@ -356,26 +501,43 @@ def public_album_download(request, share_token):
     )
 
     with zipfile.ZipFile(response, "w", zipfile.ZIP_DEFLATED) as zipf:
+
         for f in files:
-            if f.file and os.path.exists(f.file.path):
-                zipf.write(
+
+            if not f.file or not os.path.exists(f.file.path):
+                continue
+
+            if (
+                album.download_mode == "watermark"
+                and album.watermark_applied
+                and album.watermark_logo
+            ):
+
+                temp_path = stream_watermarked_image(
                     f.file.path,
-                    arcname=f.original_name
+                    album.watermark_logo.path,
+                    album.watermark_position or "br"
                 )
+
+                zipf.write(temp_path, arcname=f.original_name)
+
+                try:
+                    os.remove(temp_path)
+                except:
+                    pass
+
+            else:
+                zipf.write(f.file.path, arcname=f.original_name)
 
     return response
 
 def public_album_file_download(request, share_token, file_id):
-    album = get_object_or_404(
-        PhotoAlbum,
-        public_token=share_token
-    )
 
-    # 🚫 Download disabled
+    album = get_object_or_404(PhotoAlbum, public_token=share_token)
+
     if not album.allow_download:
         return HttpResponseForbidden("Download disabled")
 
-    # 🔐 PIN protection
     if album.pin:
         session_key = f"album_full_access_{album.public_token}"
         if not request.session.get(session_key):
@@ -389,6 +551,26 @@ def public_album_file_download(request, share_token, file_id):
         folder__in=all_folders
     )
 
+    # ✅ WATERMARK MODE DOWNLOAD
+    if (
+        album.download_mode == "watermark"
+        and album.watermark_applied
+        and album.watermark_logo
+    ):
+
+        temp_path = stream_watermarked_image(
+            file.file.path,
+            album.watermark_logo.path,
+            album.watermark_position or "br"
+        )
+
+        return FileResponse(
+            open(temp_path, "rb"),
+            as_attachment=True,
+            filename=file.original_name
+        )
+
+    # ✅ ORIGINAL DOWNLOAD
     return FileResponse(
         file.file.open("rb"),
         as_attachment=True,
@@ -555,6 +737,138 @@ def upload_chunk(request):
     return JsonResponse({"success": True})
 
 # ============================
+# CUT / COPY / PASTE FILES (WITH THUMB + FACE DATA)
+# ============================
+# ============================
+# COPY HELPERS
+# ============================
+def copy_file_to_folder(f, target_folder, user):
+    from django.core.files.base import File as DjangoFile
+
+    if not f.file or not os.path.exists(f.file.path):
+        return
+
+    new_file = UserFile.objects.create(
+        user=user,
+        folder=target_folder,
+        original_name=f.original_name,
+        file_type=f.file_type
+    )
+
+    with open(f.file.path, "rb") as fh:
+        new_file.file.save(f.original_name, DjangoFile(fh), save=True)
+
+    if f.thumbnail and os.path.exists(f.thumbnail.path):
+        with open(f.thumbnail.path, "rb") as th:
+            new_file.thumbnail.save(
+                os.path.basename(f.thumbnail.name),
+                DjangoFile(th)
+            )
+
+    if f.preview and os.path.exists(f.preview.path):
+        with open(f.preview.path, "rb") as pv:
+            new_file.preview.save(
+                os.path.basename(f.preview.name),
+                DjangoFile(pv)
+            )
+
+    for face in FaceEmbedding.objects.filter(file=f):
+        FaceEmbedding.objects.create(
+            user=user,
+            file=new_file,
+            embedding=face.embedding
+        )
+
+
+def copy_folder_recursive(src_folder, target_parent, user):
+    new_folder = Folder.objects.create(
+        user=user,
+        name=src_folder.name + " (copy)",
+        parent=target_parent
+    )
+
+    # copy files in this folder
+    for f in UserFile.objects.filter(folder=src_folder, user=user):
+        copy_file_to_folder(f, new_folder, user)
+
+    # copy subfolders
+    for sub in Folder.objects.filter(parent=src_folder, user=user):
+        copy_folder_recursive(sub, new_folder, user)
+
+    return new_folder
+
+# ============================
+# CUT / COPY / PASTE FILES + FOLDERS
+# ============================
+@login_required
+@require_POST
+def paste_files(request):
+    user = request.user
+
+    mode = request.POST.get("mode")
+    file_ids = request.POST.getlist("file_ids")
+    folder_ids = request.POST.getlist("folder_ids")
+    target_folder_id = request.POST.get("target_folder")
+
+    if mode not in ["copy", "cut"]:
+        return JsonResponse({"error": "Invalid mode"}, status=400)
+
+    target_folder = None
+    if target_folder_id:
+        target_folder = get_object_or_404(
+            Folder,
+            id=target_folder_id,
+            user=user
+        )
+
+    moved = 0
+    copied = 0
+
+    # --------------------
+    # FILES
+    # --------------------
+    files = UserFile.objects.filter(
+        id__in=file_ids,
+        user=user
+    )
+
+    for f in files:
+
+        if mode == "cut":
+            f.folder = target_folder
+            f.save(update_fields=["folder"])
+            moved += 1
+
+        else:
+            copy_file_to_folder(f, target_folder, user)
+            copied += 1
+
+    # --------------------
+    # FOLDERS
+    # --------------------
+    folders = Folder.objects.filter(
+        id__in=folder_ids,
+        user=user
+    )
+
+    for folder in folders:
+
+        if mode == "cut":
+            folder.parent = target_folder
+            folder.save(update_fields=["parent"])
+            moved += 1
+
+        else:
+            copy_folder_recursive(folder, target_folder, user)
+            copied += 1
+
+    return JsonResponse({
+        "success": True,
+        "moved": moved,
+        "copied": copied
+    })
+
+# ============================
 # PUBLIC SHARED FOLDER VIEW
 # ============================
 def shared_folder_view(request, token, folder_id=None):
@@ -574,6 +888,56 @@ def shared_folder_view(request, token, folder_id=None):
         "files": files,
         "allow_download": share.allow_download,
         "share_token": share.token,
+    })
+
+# ============================
+# BULK DELETE FILES
+# ============================
+@login_required
+@require_POST
+def bulk_delete_files(request):
+    import json
+
+    try:
+        data = json.loads(request.body)
+        ids = data.get("file_ids", [])
+    except:
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+    files = UserFile.objects.filter(id__in=ids, user=request.user)
+
+    deleted = 0
+
+    for f in files:
+
+        # 🔴 delete main file
+        try:
+            if f.file:
+                f.file.delete(save=False)
+        except Exception:
+            pass
+
+        # 🔴 delete thumbnail
+        try:
+            if getattr(f, "thumbnail", None):
+                f.thumbnail.delete(save=False)
+        except Exception:
+            pass
+
+        # 🔴 delete preview
+        try:
+            if getattr(f, "preview", None):
+                f.preview.delete(save=False)
+        except Exception:
+            pass
+
+        # 🔴 delete DB record
+        f.delete()
+        deleted += 1
+
+    return JsonResponse({
+        "success": True,
+        "deleted": deleted
     })
 
 
@@ -600,6 +964,45 @@ def shared_file_download(request, token, file_id):
         as_attachment=True,
         filename=file.original_name
     )
+
+
+def shared_folder_download(request, token):
+    """Download an entire shared folder (recursive) as a ZIP archive."""
+    share = get_object_or_404(FolderShare, token=token)
+
+    # 🚫 Download disabled
+    if not share.allow_download:
+        return HttpResponseForbidden("Download not allowed")
+
+    root = share.folder
+    all_folders = [root] + get_all_subfolders(root)
+
+    files = UserFile.objects.filter(folder__in=all_folders).order_by("numeric_key", "original_name")
+
+    response = HttpResponse(content_type="application/zip")
+    response["Content-Disposition"] = (
+        f'attachment; filename="{root.name}.zip"'
+    )
+
+    with zipfile.ZipFile(response, "w", zipfile.ZIP_DEFLATED) as zipf:
+        for f in files:
+            if f.file and os.path.exists(f.file.path):
+                # compute relative path within the shared root
+                parts = []
+                cur = f.folder
+                while cur is not None and cur.id != root.id:
+                    parts.append(cur.name)
+                    cur = cur.parent
+                parts = list(reversed(parts))
+                if parts:
+                    arcname = os.path.join(root.name, *parts, f.original_name)
+                else:
+                    arcname = os.path.join(root.name, f.original_name)
+
+                zipf.write(f.file.path, arcname=arcname)
+
+    return response
+
 
 @login_required
 def create_photo_album(request, folder_id):
