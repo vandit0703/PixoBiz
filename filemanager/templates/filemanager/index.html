@@ -1338,7 +1338,7 @@
 
         document.getElementById("fileCountStatus").innerText =
             `Files: 0 / ${totalFiles}`;
-        const CHUNK_SIZE = 20 * 1024 * 1024;
+        const CHUNK_SIZE = 100 * 1024 * 1024;
 
         {% if current_folder %}
         const parent_id = "{{ current_folder.id }}";
@@ -1383,7 +1383,7 @@
                     initForm.append("parent_id", parent_id);   // ✅ ADD THIS LINE
                 }
 
-                const initResp = await fetch("/files/upload/init/", {
+                const initResp = await fetch("/upload/init/", {
                     method: "POST",
                     body: initForm,
                     headers: { "X-CSRFToken": getCSRFToken() }
@@ -1413,7 +1413,7 @@
                     if (parent_id) chunkForm.append("parent_id", parent_id);
                     chunkForm.append("chunk", blob);
 
-                    await fetch("/files/upload/chunk/", {
+                    await fetch("/upload/chunk/", {
                         method: "POST",
                         body: chunkForm,
                         headers: { "X-CSRFToken": getCSRFToken() }

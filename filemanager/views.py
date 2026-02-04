@@ -56,7 +56,7 @@ IMAGE_EXTENSIONS = [
 
 # Chunking threshold: files larger than this MUST be uploaded via chunked upload (10 MB)
 
-CHUNK_SIZE = 20 * 1024 * 1024
+CHUNK_SIZE = 100 * 1024 * 1024
 BASE_DIR = settings.BASE_DIR
 CHUNK_ROOT = os.path.join(BASE_DIR, "runtime_chunks")
 os.makedirs(CHUNK_ROOT, exist_ok=True)
