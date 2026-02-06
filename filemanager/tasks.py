@@ -4,8 +4,9 @@ from PIL import Image, ImageFile
 from io import BytesIO
 import os
 import rawpy
-
-from .models import UserFile, FaceEmbedding
+import subprocess
+from django.db import transaction
+from .models import UserFile, FaceEmbedding, ArchiveJob
 from .utils import extract_faces
 
 # -----------------------------
@@ -160,3 +161,63 @@ def extract_face_embeddings(self, user_file_id):
             print("Embedding save failed:", e)
 
     return f"{saved} faces saved"
+
+@shared_task(bind=True)
+def build_archive(self, job_id, file_ids):
+
+    import zipfile
+    import os
+    from django.conf import settings
+    from .models import ArchiveJob, UserFile
+
+    try:
+        job = ArchiveJob.objects.get(id=job_id)
+        job.status = "processing"
+        job.progress = 1
+        job.save()
+
+        files = UserFile.objects.filter(id__in=file_ids)
+        total = files.count()
+
+        if total == 0:
+            job.status = "failed"
+            job.save()
+            return
+
+        zip_path = os.path.join(
+            settings.MEDIA_ROOT,
+            f"archives/job_{job.id}.zip"
+        )
+
+        os.makedirs(os.path.dirname(zip_path), exist_ok=True)
+
+        with zipfile.ZipFile(
+            zip_path,
+            "w",
+            compression=zipfile.ZIP_STORED,
+            allowZip64=True
+        ) as zf:
+
+            for i, f in enumerate(files, start=1):
+
+                if f.file and os.path.exists(f.file.path):
+                    zf.write(
+                        f.file.path,
+                        arcname=f.original_name
+                    )
+
+                percent = int((i / total) * 100)
+
+                ArchiveJob.objects.filter(id=job_id)\
+                    .update(progress=percent)
+
+        job.temp_path = zip_path
+        job.status = "ready"
+        job.progress = 100
+        job.save()
+
+    except Exception as e:
+        print("Archive build failed:", e)
+        ArchiveJob.objects.filter(id=job_id).update(
+            status="failed"
+        )

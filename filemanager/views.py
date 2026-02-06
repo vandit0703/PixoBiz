@@ -3,6 +3,7 @@ import zipfile
 import io
 import json
 import time
+from django.http import Http404
 from django.shortcuts import render
 from django.http import FileResponse, HttpResponseForbidden, JsonResponse
 from django.contrib.auth.decorators import login_required
@@ -37,6 +38,9 @@ from django.shortcuts import get_object_or_404
 from django.shortcuts import redirect
 from django.utils import timezone
 from django.conf import settings
+from .tasks import build_archive
+from .models import ArchiveJob
+
 
 @login_required
 def dashboard(request):
@@ -366,6 +370,77 @@ def stream_watermarked_image(file_path, logo_path, position="br"):
 
     return temp.name
 
+def start_shared_album_archive(request, token):
+
+    album = get_object_or_404(PhotoAlbum, public_token=token)
+
+    folder_path = album.folder.get_real_path()  # adjust if needed
+
+    job = ArchiveJob.objects.create(
+        user=request.user if request.user.is_authenticated else None,
+        source_path=folder_path,
+        label=album.album_name
+    )
+
+    build_archive.delay(job.id)
+
+    request.session["archive_job_id"] = job.id
+
+    return JsonResponse({"job_id": job.id})   
+
+def archive_progress(request):
+
+    job_id = request.session.get("archive_job_id")
+
+    if not job_id:
+        return JsonResponse({"status": "none"})
+
+    job = ArchiveJob.objects.get(id=job_id)
+
+    return JsonResponse({
+        "status": job.status,
+        "progress": job.progress
+    })
+
+def archive_download(request):
+
+    job_id = request.session.get("archive_job_id")
+    job = ArchiveJob.objects.get(id=job_id)
+
+    if job.status != "ready":
+        return HttpResponseForbidden()
+
+    return FileResponse(
+        open(job.temp_path, "rb"),
+        as_attachment=True,
+        filename=f"{job.label}.zip"
+    )
+
+def start_shared_album_archive(request, token):
+
+    album = get_object_or_404(PhotoAlbum, public_token=token)
+
+    all_folders = [album.folder] + get_all_subfolders(album.folder)
+
+    files = UserFile.objects.filter(folder__in=all_folders)
+
+    if not files.exists():
+        return JsonResponse({"error": "No files"}, status=400)
+
+    job = ArchiveJob.objects.create(
+        user=request.user if request.user.is_authenticated else None,
+        source_path="album_files",   # just label
+        label=album.album_name
+    )
+
+    # pass file ids instead of folder path
+    build_archive.delay(job.id, list(files.values_list("id", flat=True)))
+
+    request.session["archive_job_id"] = job.id
+
+    return JsonResponse({"job_id": job.id})
+
+
 @login_required
 def rename_folder(request, folder_id):
     if request.method != "POST":
@@ -478,58 +553,6 @@ def set_download_mode(request, album_id):
     album.save()
 
     return JsonResponse({"success": True})
-
-def public_album_download(request, share_token):
-    album = get_object_or_404(PhotoAlbum, public_token=share_token)
-
-    # 🚫 Download disabled
-    if not album.allow_download:
-        return HttpResponseForbidden("Download disabled")
-
-    # 🔐 PIN protection (same as album view)
-    if album.pin:
-        session_key = f"album_full_access_{album.public_token}"
-        if not request.session.get(session_key):
-            return HttpResponseForbidden("PIN verification required")
-
-    all_folders = [album.folder] + get_all_subfolders(album.folder)
-    files = UserFile.objects.filter(folder__in=all_folders).order_by("numeric_key", "original_name")
-
-    response = HttpResponse(content_type="application/zip")
-    response["Content-Disposition"] = (
-        f'attachment; filename="{album.album_name}.zip"'
-    )
-
-    with zipfile.ZipFile(response, "w", zipfile.ZIP_DEFLATED) as zipf:
-
-        for f in files:
-
-            if not f.file or not os.path.exists(f.file.path):
-                continue
-
-            if (
-                album.download_mode == "watermark"
-                and album.watermark_applied
-                and album.watermark_logo
-            ):
-
-                temp_path = stream_watermarked_image(
-                    f.file.path,
-                    album.watermark_logo.path,
-                    album.watermark_position or "br"
-                )
-
-                zipf.write(temp_path, arcname=f.original_name)
-
-                try:
-                    os.remove(temp_path)
-                except:
-                    pass
-
-            else:
-                zipf.write(f.file.path, arcname=f.original_name)
-
-    return response
 
 def public_album_file_download(request, share_token, file_id):
 
@@ -964,44 +987,6 @@ def shared_file_download(request, token, file_id):
         as_attachment=True,
         filename=file.original_name
     )
-
-
-def shared_folder_download(request, token):
-    """Download an entire shared folder (recursive) as a ZIP archive."""
-    share = get_object_or_404(FolderShare, token=token)
-
-    # 🚫 Download disabled
-    if not share.allow_download:
-        return HttpResponseForbidden("Download not allowed")
-
-    root = share.folder
-    all_folders = [root] + get_all_subfolders(root)
-
-    files = UserFile.objects.filter(folder__in=all_folders).order_by("numeric_key", "original_name")
-
-    response = HttpResponse(content_type="application/zip")
-    response["Content-Disposition"] = (
-        f'attachment; filename="{root.name}.zip"'
-    )
-
-    with zipfile.ZipFile(response, "w", zipfile.ZIP_DEFLATED) as zipf:
-        for f in files:
-            if f.file and os.path.exists(f.file.path):
-                # compute relative path within the shared root
-                parts = []
-                cur = f.folder
-                while cur is not None and cur.id != root.id:
-                    parts.append(cur.name)
-                    cur = cur.parent
-                parts = list(reversed(parts))
-                if parts:
-                    arcname = os.path.join(root.name, *parts, f.original_name)
-                else:
-                    arcname = os.path.join(root.name, f.original_name)
-
-                zipf.write(f.file.path, arcname=arcname)
-
-    return response
 
 
 @login_required

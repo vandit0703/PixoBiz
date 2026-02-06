@@ -31,10 +31,10 @@
             <div class="flex items-center gap-4">
                 {% if allow_download %}
                 <!-- FULL ALBUM DOWNLOAD -->
-                <a href="{% url 'shared_album_download' share_token %}" class="bg-blue-600 text-white text-sm px-4 py-2 rounded
-                      hover:bg-blue-700 transition font-semibold">
+                <button onclick="startArchive()"
+                    class="bg-blue-600 text-white text-sm px-4 py-2 rounded hover:bg-blue-700 font-semibold">
                     ⬇ Download Full Album
-                </a>
+                </button>
                 {% else %}
                 <span class="text-sm text-red-600 font-semibold">
                     🚫 Download Disabled
@@ -167,5 +167,72 @@
     </script>
 
 </body>
+<div id="archiveModal"
+class="fixed inset-0 bg-black/60 hidden flex items-center justify-center z-50">
 
+  <div class="bg-white rounded-xl p-6 w-96 shadow-xl">
+
+    <h3 class="font-bold text-lg mb-3">
+      Preparing Download
+    </h3>
+
+    <div class="bg-gray-200 rounded h-6">
+      <div id="archiveBar"
+      class="bg-blue-600 text-white text-xs text-center h-6 rounded"
+      style="width:0%">0%</div>
+    </div>
+
+    <p id="archiveText"
+       class="text-sm mt-3 text-gray-600">
+       Starting…
+    </p>
+
+    <button id="downloadReadyBtn"
+        onclick="window.location='/archive/download/'"
+        class="hidden mt-4 bg-green-600 text-white px-4 py-2 rounded w-full">
+        Download Now
+    </button>
+
+  </div>
+</div>
 </html>
+<script>
+    function startArchive(){
+
+fetch("/album/{{ share_token }}/archive/start/")
+.then(r=>r.json())
+.then(()=>{
+    document.getElementById("archiveModal")
+        .classList.remove("hidden");
+    pollArchive();
+});
+}
+
+function pollArchive(){
+
+fetch("/archive/progress/")
+.then(r=>r.json())
+.then(d=>{
+
+    let bar = document.getElementById("archiveBar");
+    let text = document.getElementById("archiveText");
+
+    if(d.status==="processing"){
+        bar.style.width = d.progress+"%";
+        bar.innerText = d.progress+"%";
+        text.innerText = "Preparing files…";
+        setTimeout(pollArchive, 2000);
+    }
+
+    else if(d.status==="ready"){
+        bar.style.width = "100%";
+        bar.innerText = "Ready";
+        text.innerText = "Download ready";
+        document.getElementById("downloadReadyBtn")
+            .classList.remove("hidden");
+    }
+
+});
+}
+
+</script>

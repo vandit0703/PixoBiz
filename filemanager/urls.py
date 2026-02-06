@@ -12,11 +12,8 @@ from .views import (
     public_album_file_download,
     rename_file,
     share_folder,
-    public_album_download,
     shared_file_download,
-    shared_folder_download,
     shared_folder_view,
-    toggle_album_download,
     toggle_album_download,
     upload_files,
     search_selfie,
@@ -46,6 +43,7 @@ from .views import (
     file_manager,
     upload_files,
     photo_album_list,
+    archive_progress,
     photo_album_detail,
     create_photo_album,
     create_folder,
@@ -59,6 +57,8 @@ from .views import (
     upload_chunk,
     paste_files,
     apply_album_watermark,
+    start_shared_album_archive,
+    archive_download,
 )
 
 urlpatterns = [
@@ -91,6 +91,9 @@ urlpatterns = [
         photo_album_edit,
         name="photo_album_edit"
     ),
+    path("album/<uuid:token>/archive/start/", start_shared_album_archive),
+    path("archive/progress/", archive_progress),
+    path("archive/download/", archive_download),
     path(
         "photo-albums/<int:album_id>/toggle-download/",
         toggle_album_download,
@@ -101,11 +104,6 @@ urlpatterns = [
         "photo-albums/<int:album_id>/set-pin/",
         photo_album_set_pin,
         name="photo_album_pin"
-    ),
-    path(
-        "share/<uuid:share_token>/album/download/",
-        public_album_download,
-        name="shared_album_download"
     ),
     path(
         "share/<uuid:share_token>/album/file/<int:file_id>/download/",
@@ -158,11 +156,6 @@ urlpatterns = [
         name="shared_file_download"
     ),
     path("files/bulk-delete/", bulk_delete_files, name="bulk_delete_files"),
-    path(
-        "shared/folder/<uuid:token>/download/",
-        shared_folder_download,
-        name="shared_folder_download"
-    ),
     path(
         "photo-albums/<int:album_id>/apply-watermark/",
         apply_album_watermark,

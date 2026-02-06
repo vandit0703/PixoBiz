@@ -159,6 +159,17 @@ class PhotoAlbum(models.Model):
     def __str__(self):
         return self.album_name
 
+class ArchiveJob(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    source_path = models.TextField()
+
+    temp_path = models.TextField(null=True, blank=True)
+
+    status = models.CharField(max_length=20, default="pending")
+    progress = models.IntegerField(default=0)
+    label = models.CharField(max_length=255, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
 class FaceSearchLog(models.Model):
     album = models.ForeignKey(PhotoAlbum, on_delete=models.CASCADE, related_name="face_logs")
