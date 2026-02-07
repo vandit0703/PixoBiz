@@ -26,7 +26,7 @@ from PIL import Image
 from .tasks import generate_thumbnail, extract_face_embeddings
 from django.db.models import Q
 from django.views.decorators.http import require_POST
-from .models import FaceSearchLog, FolderShare, UserFile, FaceEmbedding, CalendarEvent, Applicant,PhotoAlbum, UploadSession
+from .models import ClientSelection, FaceSearchLog, FolderShare, UserFile, FaceEmbedding, CalendarEvent, Applicant,PhotoAlbum, UploadSession
 from .utils import extract_faces, extract_single_face
 from .models import Announcement,Folder
 from .forms import AnnouncementForm, CalendarEventForm, ProfileForm, SellerRequestForm
@@ -440,6 +440,42 @@ def start_shared_album_archive(request, token):
 
     return JsonResponse({"job_id": job.id})
 
+
+
+def save_client_selection(request, share_token):
+
+    album = PhotoAlbum.objects.get(public_token=share_token)
+
+    data = json.loads(request.body)
+    ids = data.get("files", [])
+
+    for fid in ids:
+        ClientSelection.objects.get_or_create(
+            album=album,
+            file_id=fid,
+            share_token=share_token
+        )
+
+    return JsonResponse({"ok": True})
+
+@login_required
+def album_selected_photos(request, album_id):
+
+    album = PhotoAlbum.objects.get(id=album_id, user=request.user)
+
+    selected_ids = ClientSelection.objects.filter(
+        album=album
+    ).values_list("file_id", flat=True)
+
+    files = UserFile.objects.filter(id__in=selected_ids)
+
+    return render(request,
+        "filemanager/album_selected_photos.html",
+        {
+            "album": album,
+            "files": files
+        }
+    )
 
 @login_required
 def rename_folder(request, folder_id):
@@ -1126,7 +1162,6 @@ def toggle_album_download(request, album_id):
         "allow_download": album.allow_download
     })
 
-
 @login_required
 def photo_album_detail(request, album_id, folder_id=None):
     album = get_object_or_404(
@@ -1135,7 +1170,6 @@ def photo_album_detail(request, album_id, folder_id=None):
         user=request.user
     )
 
-    # which folder to show
     if folder_id:
         folder = get_object_or_404(
             Folder,
@@ -1155,6 +1189,11 @@ def photo_album_detail(request, album_id, folder_id=None):
         user=request.user
     ).order_by("numeric_key", "original_name")
 
+    # ✅ ADD THIS
+    selected_files = UserFile.objects.filter(
+        clientselection__album=album
+    ).distinct()
+
     return render(
         request,
         "filemanager/album_detail.html",
@@ -1163,9 +1202,49 @@ def photo_album_detail(request, album_id, folder_id=None):
             "folder": folder,
             "folders": subfolders,
             "files": files,
+            "selected_files": selected_files,   # ✅ PASS
         }
     )
 
+@login_required
+def download_selected_zip(request, album_id):
+
+    album = get_object_or_404(
+        PhotoAlbum,
+        id=album_id,
+        user=request.user
+    )
+
+    files = UserFile.objects.filter(
+        clientselection__album=album
+    )
+
+    if not files.exists():
+        return HttpResponse("No selected files")
+
+    buffer = io.BytesIO()
+
+    with zipfile.ZipFile(buffer, "w") as zf:
+        for f in files:
+            try:
+                if os.path.exists(f.file.path):
+                    zf.write(
+                        f.file.path,
+                        arcname=os.path.basename(f.file.name)
+                    )
+            except:
+                continue
+
+    buffer.seek(0)
+
+    return HttpResponse(
+        buffer.read(),
+        content_type="application/zip",
+        headers={
+            "Content-Disposition":
+            f'attachment; filename="{album.album_name}-selected.zip"'
+        }
+    )
 
 @login_required
 def photo_album_list(request):

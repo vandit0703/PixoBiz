@@ -1,0 +1,266 @@
+{% extends "filemanager/base.html" %}
+{% block page_title %}Client Selected Photos{% endblock %}
+
+{% block content %}
+
+<style>
+:root {
+    --blue:#0061f2;
+    --navy:#012970;
+    --gray:#f4f6f9;
+    --border:#e0e6ed;
+}
+
+.page-content {
+    background: var(--gray);
+    min-height: 100vh;
+    padding: 30px;
+}
+
+/* HEADER */
+.header-card {
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:20px;
+    box-shadow:0 6px 18px rgba(0,0,0,.05);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:12px;
+}
+
+.title {
+    font-size:1.2rem;
+    font-weight:800;
+    color:var(--navy);
+}
+
+.sub {
+    font-size:.85rem;
+    color:#6c757d;
+    margin-top:4px;
+}
+
+.btn {
+    padding:10px 16px;
+    border-radius:10px;
+    font-size:.85rem;
+    font-weight:700;
+    text-decoration:none;
+    display:inline-block;
+}
+
+.btn-blue { background:#0061f2; color:white; }
+.btn-gray { background:#e5e7eb; color:#111; }
+
+/* GRID */
+.grid {
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+    gap:20px;
+    margin-top:24px;
+}
+
+.card {
+    background:#fff;
+    border-radius:12px;
+    border:1px solid var(--border);
+    box-shadow:0 5px 15px rgba(0,0,0,.05);
+    overflow:hidden;
+    transition:.25s;
+    cursor:pointer;
+}
+
+.card:hover {
+    transform:translateY(-4px);
+    box-shadow:0 12px 28px rgba(0,0,0,.12);
+}
+
+.thumb {
+    width:100%;
+    height:180px;
+    object-fit:cover;
+}
+
+.body {
+    padding:10px 12px;
+}
+
+.name {
+    font-size:.8rem;
+    font-weight:600;
+}
+
+/* EMPTY */
+.empty {
+    background:#fff;
+    border:1px dashed #cbd5e1;
+    border-radius:12px;
+    padding:80px 20px;
+    text-align:center;
+    color:#888;
+    margin-top:30px;
+}
+
+/* LIGHTBOX */
+#lightbox {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.94);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 999999;   /* 🔥 higher than sidebar */
+}
+body.lb-open .sidebar,
+body.lb-open #sidebar {
+    display: none !important;
+}
+#lightbox img {
+    max-height:90vh;
+    max-width:90vw;
+    border-radius:12px;
+}
+
+.lb-btn {
+    position:absolute;
+    color:white;
+    font-size:42px;
+    cursor:pointer;
+    user-select:none;
+}
+
+.lb-close { top:25px; right:30px; font-size:32px; background:white; color:black;
+    width:44px; height:44px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+}
+
+.lb-prev { left:30px; }
+.lb-next { right:30px; }
+
+@media(max-width:768px){
+    .page-content { padding:16px; }
+    .thumb { height:150px; }
+}
+</style>
+
+<div class="page-content">
+
+<!-- HEADER -->
+<div class="header-card">
+
+    <div>
+        <div class="title">✅ Selected Photos</div>
+        <div class="sub">
+            {{ album.album_name }} — {{ album.event_date }}
+        </div>
+    </div>
+
+    <div class="flex gap-3 flex-wrap">
+
+        <a href="{% url 'download_selected_zip' album.id %}"
+           class="btn btn-blue">
+           ⬇ Download ZIP
+        </a>
+
+        <a href="{% url 'photo_album_detail' album.id %}"
+           class="btn btn-gray">
+           ← Back to Album
+        </a>
+
+    </div>
+
+</div>
+
+<!-- GRID -->
+{% if files %}
+<div class="grid">
+
+{% for f in files %}
+<div class="card" onclick="openLightbox({{ forloop.counter0 }})">
+
+    {% if f.file_type == "image" and f.thumbnail %}
+        <img src="{{ f.thumbnail.url }}" class="thumb">
+    {% else %}
+        <div class="thumb flex items-center justify-center text-4xl bg-blue-100">
+            📄
+        </div>
+    {% endif %}
+
+    <div class="body">
+        <div class="name truncate">
+            {{ f.original_name }}
+        </div>
+    </div>
+
+    <input type="hidden" class="file-url" value="{{ f.file.url }}">
+
+</div>
+{% endfor %}
+
+</div>
+
+{% else %}
+<div class="empty">
+    No client has selected any photos yet.
+</div>
+{% endif %}
+
+</div>
+
+<!-- LIGHTBOX -->
+<div id="lightbox">
+    <div class="lb-btn lb-close" onclick="closeLightbox()">✕</div>
+    <div class="lb-btn lb-prev" onclick="prevImg()">‹</div>
+    <div class="lb-btn lb-next" onclick="nextImg()">›</div>
+    <img id="lbImg">
+</div>
+
+<script>
+let lbFiles = [];
+let lbIndex = 0;
+
+document.querySelectorAll(".file-url").forEach(el=>{
+    lbFiles.push(el.value);
+});
+
+function openLightbox(i){
+    lbIndex = i;
+    showImg();
+    document.getElementById("lightbox").style.display="flex";
+    document.body.classList.add("lb-open");   // hide sidebar
+    document.body.style.overflow = "hidden";
+}
+
+function closeLightbox(){
+    document.getElementById("lightbox").style.display="none";
+    document.body.classList.remove("lb-open");
+    document.body.style.overflow = "";
+}
+
+
+function showImg(){
+    document.getElementById("lbImg").src = lbFiles[lbIndex];
+}
+
+function nextImg(){
+    lbIndex = (lbIndex+1) % lbFiles.length;
+    showImg();
+}
+
+function prevImg(){
+    lbIndex = (lbIndex-1+lbFiles.length)%lbFiles.length;
+    showImg();
+}
+
+document.addEventListener("keydown", e=>{
+    if(document.getElementById("lightbox").style.display!=="flex") return;
+    if(e.key==="Escape") closeLightbox();
+    if(e.key==="ArrowRight") nextImg();
+    if(e.key==="ArrowLeft") prevImg();
+});
+</script>
+
+{% endblock %}

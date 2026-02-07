@@ -6,6 +6,7 @@ from .views import (
     album_face_search_view,
     bulk_delete_files,
     delete_file,
+    download_selected_zip,
     my_applications,
     photo_album_set_pin,
     public_album_detail,
@@ -46,6 +47,7 @@ from .views import (
     archive_progress,
     photo_album_detail,
     create_photo_album,
+    save_client_selection,
     create_folder,
     rename_folder,
     delete_folder,
@@ -59,6 +61,7 @@ from .views import (
     apply_album_watermark,
     start_shared_album_archive,
     archive_download,
+    album_selected_photos,
 )
 
 urlpatterns = [
@@ -79,11 +82,26 @@ urlpatterns = [
         photo_album_detail,
         name="photo_album_detail"
     ),
+    path(
+        "photo-albums/<int:album_id>/selected/",
+        album_selected_photos,
+        name="album_selected_photos"
+    ),
+    path(
+        "album/<int:album_id>/download-selected/",
+        download_selected_zip,
+        name="download_selected_zip"
+    ),
     path("albums/<int:album_id>/<int:folder_id>/",photo_album_detail, name="photo_album_folder"),
     path(
         "folders/<int:folder_id>/share/photo-album/",
         create_photo_album,
         name="create_photo_album"
+    ),
+    path(
+        "album/<str:share_token>/save-selection/",
+        save_client_selection,
+        name="save_client_selection"
     ),
     # Edit album
     path(

@@ -275,9 +275,12 @@
                                 event,
                                 '{{ album.public_token }}',
                                 '{{ album.id }}',
-                                {{ album.allow_download|yesno:" true,false" }}, '{% url "photo_album_edit" album.id %}'
-                            , '{% url "photo_album_pin" album.id %}' , '{% url "album_customers" album.id %}'
-                            , '{% url "photo_album_delete" album.id %}' )">
+                                {{ album.allow_download|yesno:" true,false" }},
+                                '{% url "photo_album_edit" album.id %}',
+                                '{% url "photo_album_pin" album.id %}',
+                                '{% url "album_customers" album.id %}',
+                                '{% url "album_selected_photos" album.id %}',
+                                '{% url "photo_album_delete" album.id %}')">
                             ⋮
                         </button>
 
@@ -475,6 +478,7 @@
             editUrl,
             pinUrl,
             customerUrl,
+            selectedUrl,
             deleteUrl
         ) {
             e.stopPropagation();
@@ -497,7 +501,7 @@
                 onclick="event.preventDefault(); openPublishModal('${albumUrl}')">
                 🔗 View QR or Link
                 </a>
-
+                <a href="${selectedUrl}">✅ Selected Photos</a>
                 <a href="${customerUrl}">👥 View Customers</a>
 
                 <a href="${deleteUrl}" class="text-red-600">🗑 Delete</a>

@@ -318,6 +318,18 @@ class Applicant(models.Model):
     def __str__(self):
         return f"{self.user.username} applied for {self.announcement.occasion}"
 
+class ClientSelection(models.Model):
+    album = models.ForeignKey("PhotoAlbum", on_delete=models.CASCADE)
+    file = models.ForeignKey("UserFile", on_delete=models.CASCADE)
+
+    # identify which client — use share_token or pin session id
+    share_token = models.CharField(max_length=120)
+
+    selected_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("album", "file", "share_token")
+
 
 class Profile(models.Model):
     """Extended profile information for users"""
