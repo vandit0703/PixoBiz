@@ -1427,10 +1427,10 @@
                         formatBytes(uploadedBytes) + " uploaded";
                     document.getElementById("remainingSize").innerText =
                         formatBytes(totalBytes - uploadedBytes) + " remaining";
-                    completedFiles++;
+                }
+                completedFiles++;
                     document.getElementById("fileCountStatus").innerText =
                         `Files: ${completedFiles} / ${totalFiles}`;
-                }
             } else {
                 document.getElementById("currentFile").innerText =
                     `${file.name} uploading…`;

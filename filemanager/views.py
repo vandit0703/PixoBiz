@@ -690,7 +690,6 @@ def upload_init(request):
         relative_path=relative_path,
         total_size=total_size,
         total_chunks=total_chunks,
-        parent_id=parent_id,   # ✅ SAVE
     )
 
     return JsonResponse({"upload_id": str(session.id)})
